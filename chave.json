@@ -44,6 +44,18 @@
         "data": "1U8Rb6DgwWp34CBjANxIf6iPoCVHzczVo74unNwgC7RowpoY3nxpojO5Id8VtJ7f5RrLXTk+DPJ+NwU68GAyQxo2vEi3/xBf09fjyt2eg4Jwjr6diM6n3oF2VivttPIzPAESUb4iSZU4QMWv1Q=="
       },
       "mustChange": true
+    },
+    "cb-4": {
+      "name": "Matheus",
+      "lock": {
+        "v": 1,
+        "kdf": "PBKDF2-SHA256",
+        "iter": 310000,
+        "salt": "dK2FKVQr9NwdL7+0Ob21tQ==",
+        "iv": "SKQr2hb43O1RmOns",
+        "data": "gCHLXJldJ3u8gLaUYRQNLhIZEMlHDmmaZ3xoFmSS9FdjHOofhyJXrK16cr3E4tjQBzADqlIt8ljTvhRZoLrGME/iF2fa0ZF5ZqAi0Q8hTKU4O/SAXyfVh1CXl0yLSQvAYOIPbSqk7qGGcv1IIw=="
+      },
+      "mustChange": true
     }
   },
   "admins": [
