@@ -113,7 +113,18 @@
   .bell-item b { display: block; font-size: 13px; }
   .bell-item span { display: block; font-size: 12.5px; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .bell-empty { padding: 18px 14px; text-align: center; color: var(--muted); font-size: 13px; }
-  .talk { border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px; gap: 10px; }
+  .modal.wide { max-width: 1120px; }
+  .modal-split { display: flex; align-items: flex-start; }
+  .modal-split > .modal-body { flex: 1; min-width: 0; }
+  .talk { width: 400px; flex: none; display: flex; flex-direction: column; gap: 10px; padding: 18px; border-left: 1px solid var(--border); position: sticky; top: 0; max-height: calc(100vh - 80px); overflow-y: auto; align-self: stretch; }
+  .talk[hidden] { display: none; }
+  .talk .msgs { max-height: none; flex: 1; min-height: 140px; }
+  .talk-head { font-size: 15px; font-weight: 700; }
+  @media (max-width: 900px) {
+    .modal-split { flex-direction: column; align-items: stretch; }
+    .talk { width: auto; border-left: 0; border-top: 1px solid var(--border); position: static; max-height: none; }
+    .talk .msgs { max-height: 360px; }
+  }
   .talk-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border-radius: 10px; background: var(--primary-soft); }
   .talk-actions .t { flex: 1; min-width: 180px; font-size: 13px; font-weight: 600; }
   .talk .btn.btn-ok { background: #22a06b; border-color: #22a06b; color: #fff; }
@@ -207,12 +218,12 @@
   .icon-btn:disabled:hover { background: var(--surface); }
 
   /* ---------- Campos ---------- */
-  .input, .field input, .field select, .field textarea {
+  .input, .field input, .field select, .field textarea, .talk textarea, .talk select {
     width: 100%; padding: 8px 10px;
     background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
     outline: none; transition: border-color .15s, box-shadow .15s;
   }
-  .input:focus, .field input:focus, .field select:focus, .field textarea:focus {
+  .input:focus, .field input:focus, .field select:focus, .field textarea:focus, .talk textarea:focus, .talk select:focus {
     border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft);
   }
   textarea { resize: vertical; }
@@ -878,6 +889,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
     </div>
+    <div class="modal-split">
     <div class="modal-body">
       <div class="field full" id="nameField">
         <div class="name-row">
@@ -937,7 +949,8 @@
         <label for="f-notes">Observações</label>
         <textarea id="f-notes" rows="3"></textarea>
       </div>
-      <div class="field full talk" id="talkBox" hidden></div>
+    </div>
+    <aside class="talk" id="talkBox" hidden></aside>
     </div>
     <div class="modal-foot">
       <button type="button" class="btn btn-danger" id="deleteBtn">Excluir</button>
@@ -3275,10 +3288,11 @@
   function renderTalk() {
     var box = $('#talkBox');
     var p = editingId ? byId(state.projects, editingId) : null;
+    form.classList.toggle('wide', !!p);
     if (!p) { box.hidden = true; box.innerHTML = ''; return; }
     box.hidden = false;
     var me = currentUser();
-    var html = '';
+    var html = '<div class="talk-head">Conversa e ajustes</div>';
     if (isConfStatus(p.statusId)) {
       html += '<div class="talk-actions"><span class="t">Este projeto está em conferência.</span>' +
         '<button type="button" class="btn btn-ok sm" data-talk="approve">Aprovar</button>' +
@@ -3307,7 +3321,7 @@
         (!pend ? '<button type="button" class="btn sm" data-talk="adj-clear" style="margin-top:6px">Limpar ajustes feitos</button>' : '') + '</div>';
     }
     var msgs = p.comments || [];
-    html += '<div class="talk-title">Conversa</div>' +
+    html += '<div class="talk-title">Mensagens</div>' +
       '<div class="msgs" id="talkMsgs">' + (msgs.length ? msgs.map(function (m) {
         return '<div class="msg' + (m.kind === 'sys' ? ' sys' : (m.by && m.by === me ? ' mine' : '')) + '"><div class="msg-h"><b>' + esc(whoName(m.by)) + '</b>' + fmtWhen(m.at) + '</div><div class="msg-t">' + esc(m.text) + '</div></div>';
       }).join('') : '<div class="talk-empty">Nenhuma mensagem ainda.</div>') + '</div>' +
