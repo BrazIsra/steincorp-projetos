@@ -8,5 +8,18 @@
     "salt": "GkfP5E+5DwwdACcBlzflyA==",
     "iv": "IJdSSsCx93/aJOYJ",
     "data": "3FWRRnFjiS3BnSo/435/Q3s8LcKW2/uFMevlKrx8d16zRVSlki7gO5fug0qPW6ShvmgG8anybPkgvIYOxQ6P8cQ+MtbCxwcR4jcG1AqnCau3FycEQNE5mVTyj4JKxOYKk/1np4/L6Y/qSJcJJQ=="
+  },
+  "users": {
+    "cb-1": {
+      "name": "Israel",
+      "lock": {
+        "v": 1,
+        "kdf": "PBKDF2-SHA256",
+        "iter": 310000,
+        "salt": "TrWmoZe0itchylGGJ/RAzg==",
+        "iv": "h3anJTdoVAAplByZ",
+        "data": "lQPnsAM19jF6LnQDXdpEbS0UtEL6PuJJj9QTQxaFgU75Zre0Ybk0Bqfd++PM1hp3XPmgeHV5QFSJ4eg+cWx3r2pkFj5Lw4WgoDVxKX7HXdsZI2Q7Qu8BGJY7c5aWBmER9dcE3bjJ82l1Ti1teA=="
+      }
+    }
   }
 }
