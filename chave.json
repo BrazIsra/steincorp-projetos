@@ -32,6 +32,18 @@
         "data": "2oM4X4ZE+31q7jdNHFWPiDYeFnvk+l3RxTL94r2WIpMIzsG53H3Ve+xhctm9HzMAg41xkNJPIDhOA9wnk5638XCCxz/B3reT3A6KuCqwqlj425evxEAfYxtt2yd2z9yRBv9dTLgipFNLAgRfsw=="
       },
       "mustChange": true
+    },
+    "cb-3": {
+      "name": "Guilherme",
+      "lock": {
+        "v": 1,
+        "kdf": "PBKDF2-SHA256",
+        "iter": 310000,
+        "salt": "Kq+uW+fAvRAoWUO8tirjHA==",
+        "iv": "Ozewfxqn38q/K/QS",
+        "data": "1U8Rb6DgwWp34CBjANxIf6iPoCVHzczVo74unNwgC7RowpoY3nxpojO5Id8VtJ7f5RrLXTk+DPJ+NwU68GAyQxo2vEi3/xBf09fjyt2eg4Jwjr6diM6n3oF2VivttPIzPAESUb4iSZU4QMWv1Q=="
+      },
+      "mustChange": true
     }
   },
   "admins": [
