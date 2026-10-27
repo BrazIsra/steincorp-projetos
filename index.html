@@ -1117,7 +1117,7 @@
     var src = (d.filters && typeof d.filters === 'object') ? d.filters : {};
     Object.keys(f).forEach(function (k) {
       var s = src[k];
-      if (s && Array.isArray(s.selected)) f[k] = { mode: s.mode === 'exclude' ? 'exclude' : 'include', selected: s.selected.slice() };
+      if (s && Array.isArray(s.selected)) f[k] = { mode: 'include', selected: s.selected.slice() };
     });
     out.filters = f;
     var so = d.sort;
@@ -1774,9 +1774,6 @@
       }).join('') || '<div class="multi-empty">Nenhum item cadastrado.</div>';
       return '<div class="filter-sec mode-' + f.mode + '" data-key="' + def.key + '">' +
         '<div class="fs-title"><span>' + def.label + '</span>' + badge + '</div>' +
-        '<div class="seg"><button type="button" data-f="mode" data-mode="include" class="' + (f.mode === 'include' ? 'on' : '') + '">Incluir</button>' +
-        '<button type="button" data-f="mode" data-mode="exclude" class="' + (f.mode === 'exclude' ? 'on' : '') + '">Excluir</button></div>' +
-        '<p class="hint">' + (f.mode === 'include' ? 'Mostra só os marcados.' : 'Mostra tudo, exceto os marcados.') + '</p>' +
         '<div class="opts">' + opts + '</div>' +
         '<div class="fs-links"><button type="button" data-f="all">Todos</button><button type="button" data-f="none">Nenhum</button>' +
         (n ? '<button type="button" class="danger" data-f="clear">Limpar</button>' : '') + '</div>' +
