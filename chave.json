@@ -39,11 +39,10 @@
         "v": 1,
         "kdf": "PBKDF2-SHA256",
         "iter": 310000,
-        "salt": "Kq+uW+fAvRAoWUO8tirjHA==",
-        "iv": "Ozewfxqn38q/K/QS",
-        "data": "1U8Rb6DgwWp34CBjANxIf6iPoCVHzczVo74unNwgC7RowpoY3nxpojO5Id8VtJ7f5RrLXTk+DPJ+NwU68GAyQxo2vEi3/xBf09fjyt2eg4Jwjr6diM6n3oF2VivttPIzPAESUb4iSZU4QMWv1Q=="
-      },
-      "mustChange": true
+        "salt": "+uxGptrneN/I8+aEZp11PA==",
+        "iv": "uB0zawAoT19PEU2l",
+        "data": "SHrjLd+PODrPknuY+enPW5TGzNIEr+wONWf9mskYrde4NPSGxWWA3mPSOQV8F2I7HtTgweOG/ZYOrFU5Tye9jtLCjb835osH8koVWtn6nauinpKpchs5ck4ORjX5vjU7qsHFpEIdxY5avJyNTw=="
+      }
     },
     "cb-4": {
       "name": "Matheus",
