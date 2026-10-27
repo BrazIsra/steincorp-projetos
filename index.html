@@ -1044,7 +1044,7 @@
      ========================================================= */
   function emptyFilters() {
     return {
-      status: { mode: 'include', selected: [] },
+      resp: { mode: 'include', selected: [] },
       priority: { mode: 'include', selected: [] },
       type: { mode: 'include', selected: [] }
     };
@@ -1491,7 +1491,7 @@
   var ui = { search: '', openFilter: null, respOpen: false, ghSetup: false, ghPass: null, userPass: null };
 
   var FILTERS = [
-    { key: 'status', label: 'Status', list: 'statuses', field: 'statusId' },
+    { key: 'resp', label: 'Colaborador', list: 'collaborators', field: 'responsibles' },
     { key: 'priority', label: 'Prioridade', list: 'priorities', field: 'priorityId' },
     { key: 'type', label: 'Disciplina', list: 'types', field: 'typeIds' }
   ];
@@ -1752,7 +1752,7 @@
   function filteredProjects() {
     var q = norm(ui.search.trim());
     return state.projects.filter(function (p) {
-      return passFilter('status', p.statusId) && passFilter('priority', p.priorityId) &&
+      return passFilter('resp', p.responsibles) && passFilter('priority', p.priorityId) &&
         passFilter('type', p.typeIds) && matchSearch(p, q);
     });
   }
@@ -1944,9 +1944,6 @@
     var groups = state.statuses.map(function (s) { return { id: s.id, name: s.name, color: s.color }; });
     if (state.projects.some(function (p) { return !byId(state.statuses, p.statusId); }) || !groups.length) {
       groups.push({ id: '', name: 'Sem status', color: '#8b95a7' });
-    }
-    if (state.filters.status.selected.length) {
-      groups = groups.filter(function (g) { return passFilter('status', g.id); });
     }
     var filtering = anyFilterActive() || !!ui.search.trim();
     if (!groups.length) {
@@ -3533,18 +3530,15 @@
     var kind = g.dataset.goto, id = g.dataset.id;
     state.filters = emptyFilters();
     ui.search = ''; searchEl.value = '';
-    if (kind === 'resp') {
-      var c = byId(state.collaborators, id);
-      ui.search = c ? c.name : ''; searchEl.value = ui.search;
-    } else {
-      state.filters[kind] = { mode: 'include', selected: [id] };
-    }
-    if (state.statsScope === 'open' && kind !== 'status') {
-      state.filters.status = { mode: 'exclude', selected: state.statuses.filter(function (s) { return isDoneStatus(s.id); }).map(function (s) { return s.id; }) };
-    }
+    if (state.filters[kind]) state.filters[kind] = { mode: 'include', selected: [id] };
+    if (kind === 'status') { var gk = groupKey(id); if (state.collapsed[gk]) delete state.collapsed[gk]; }
     state.tab = 'projects';
     save(); showTab(); refreshData();
     window.scrollTo(0, 0);
+    if (kind === 'status') {
+      var gEl = $$('.group', tbody).filter(function (x) { return x.dataset.status === id; })[0];
+      if (gEl && gEl.scrollIntoView) gEl.scrollIntoView({ block: 'start' });
+    }
   });
 
   /* =========================================================
