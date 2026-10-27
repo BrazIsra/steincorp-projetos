@@ -149,6 +149,9 @@
   .msg-t { white-space: pre-wrap; word-break: break-word; font-size: 13.5px; }
   .msg-new { display: flex; gap: 8px; align-items: flex-end; }
   .msg-new textarea { flex: 1; min-height: 40px; }
+  .log-line { font-size: 12.5px; color: var(--muted); padding: 2px 4px; line-height: 1.4; }
+  .log-line b { color: var(--text); font-weight: 600; }
+  .log-line span { white-space: nowrap; opacity: .8; }
   .talk-empty { font-size: 13px; color: var(--muted); }
   .p-flags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 3px; }
   .flag { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700; padding: 1px 7px; border-radius: 999px; }
@@ -1170,7 +1173,10 @@
         createdAt: /^\d{4}-\d{2}-\d{2}$/.test(p.createdAt || '') ? p.createdAt : '',
         completedAt: /^\d{4}-\d{2}-\d{2}$/.test(p.completedAt || '') ? p.completedAt : '',
         comments: (Array.isArray(p.comments) ? p.comments : []).filter(function (c) { return c && c.text; }).map(function (c) {
-          return { id: String(c.id || ''), by: String(c.by || ''), at: String(c.at || ''), text: String(c.text), kind: c.kind ? String(c.kind) : '' };
+          var o = { id: String(c.id || ''), by: String(c.by || ''), at: String(c.at || ''), text: String(c.text), kind: c.kind ? String(c.kind) : '' };
+          if (c.f) o.f = String(c.f);
+          if (c.from !== undefined) o.from = String(c.from);
+          return o;
         }),
         adjustments: (Array.isArray(p.adjustments) ? p.adjustments : []).filter(function (a) { return a && a.text; }).map(function (a) {
           return { id: String(a.id || ''), text: String(a.text), by: String(a.by || ''), at: String(a.at || ''), done: !!a.done, doneBy: String(a.doneBy || ''), doneAt: String(a.doneAt || '') };
@@ -1471,6 +1477,7 @@
     if (json === sharedJSON(state)) return;
     SHARED_KEYS.forEach(function (k) { state[k] = incoming[k]; });
     purgeRefs();
+    takeSnap();
     writeLocal(CACHE_KEY, pick(state, SHARED_KEYS));
     if (document.activeElement !== appTitle) { appTitle.textContent = state.title; document.title = state.title; }
     refreshData();
@@ -1478,6 +1485,7 @@
   }
 
   function save() {
+    scheduleLog();
     writeLocal(PREFS_KEY, pick(state, LOCAL_KEYS));
     writeLocal(CACHE_KEY, pick(state, SHARED_KEYS));
     if (!gh.ready || gh.conflict) return;
@@ -2876,6 +2884,7 @@
         if (!data || !Array.isArray(data.projects)) throw new Error('formato');
         var prefs = pick(state, LOCAL_KEYS);
         state = normalize(Object.assign({}, data, prefs));
+        takeSnap();
         state.tab = 'settings';
         purgeRefs(); save(); renderAll();
         toast(gh.ready ? 'Backup importado. Salvando no GitHub…' : 'Backup importado neste navegador. Conecte o GitHub para salvar lá.');
@@ -3181,6 +3190,82 @@
   }
 
   /* =========================================================
+     Histórico automático: registra quem mudou o quê
+     ========================================================= */
+  var snap = {}, logTimer = null, skipStatusLog = {};
+  function snapOf(p) {
+    return { name: p.name, statusId: p.statusId, priorityId: p.priorityId, deadline: p.deadline, progress: p.progress,
+      responsibles: p.responsibles.slice(), typeIds: p.typeIds.slice(), desc: p.desc, notes: p.notes, client: p.client, location: p.location };
+  }
+  function takeSnap() {
+    snap = {};
+    state.projects.forEach(function (p) { snap[p.id] = snapOf(p); });
+  }
+  function scheduleLog() {
+    clearTimeout(logTimer);
+    logTimer = setTimeout(function () { if (logChanges()) save(); }, 900);
+  }
+  function nameIn(list, id, empty) { var x = byId(list, id); return x ? x.name : empty; }
+  function fmtDate(d) { if (!d) return ''; var a = d.split('-'); return a.length === 3 ? a[2] + '/' + a[1] + '/' + a[0] : d; }
+  function pushLog(p, text, f, from) {
+    var me = currentUser() || '';
+    var last = p.comments && p.comments[p.comments.length - 1];
+    if (f === 'progress' && last && last.kind === 'log' && last.f === 'progress' && last.by === me && (Date.now() - new Date(last.at).getTime()) < 10 * 60000) {
+      if (String(last.from) === String(p.progress)) { p.comments.pop(); return; }
+      last.text = 'Mudou o andamento de ' + last.from + '% para ' + p.progress + '%.';
+      last.at = nowISO();
+      return;
+    }
+    p.comments = p.comments || [];
+    var c = { id: uid(), by: me, at: nowISO(), text: text, kind: 'log' };
+    if (f) c.f = f;
+    if (from !== undefined) c.from = String(from);
+    p.comments.push(c);
+  }
+  function logChanges() {
+    var changed = false;
+    state.projects.forEach(function (p) {
+      var o = snap[p.id];
+      if (!o) { pushLog(p, 'Criou o projeto.'); changed = true; return; }
+      var stChanged = o.statusId !== p.statusId;
+      if (stChanged && !skipStatusLog[p.id]) {
+        pushLog(p, 'Mudou o status de ' + nameIn(state.statuses, o.statusId, 'Sem status') + ' para ' + nameIn(state.statuses, p.statusId, 'Sem status') + '.'); changed = true;
+      }
+      if (o.priorityId !== p.priorityId && !(stChanged && clearsPriority(p.statusId) && p.priorityId === noPriorityId())) {
+        pushLog(p, 'Mudou a prioridade de ' + nameIn(state.priorities, o.priorityId, 'Sem prioridade') + ' para ' + nameIn(state.priorities, p.priorityId, 'Sem prioridade') + '.'); changed = true;
+      }
+      if (o.progress !== p.progress && !(stChanged && isDoneStatus(p.statusId) && p.progress === 100)) {
+        pushLog(p, 'Mudou o andamento de ' + o.progress + '% para ' + p.progress + '%.', 'progress', o.progress); changed = true;
+      }
+      if (o.deadline !== p.deadline) {
+        pushLog(p, !o.deadline ? 'Definiu o prazo para ' + fmtDate(p.deadline) + '.' : (!p.deadline ? 'Removeu o prazo (era ' + fmtDate(o.deadline) + ').' : 'Mudou o prazo de ' + fmtDate(o.deadline) + ' para ' + fmtDate(p.deadline) + '.')); changed = true;
+      }
+      var addR = p.responsibles.filter(function (x) { return o.responsibles.indexOf(x) < 0; });
+      var remR = o.responsibles.filter(function (x) { return p.responsibles.indexOf(x) < 0; });
+      if (addR.length) { pushLog(p, 'Adicionou ' + addR.map(whoName).join(', ') + ' como responsável.'); changed = true; }
+      if (remR.length) { pushLog(p, 'Tirou ' + remR.map(whoName).join(', ') + ' dos responsáveis.'); changed = true; }
+      if (o.typeIds.join(',') !== p.typeIds.join(',')) {
+        var ts = p.typeIds.map(function (id) { return nameIn(state.types, id, ''); }).filter(Boolean);
+        pushLog(p, ts.length ? 'Mudou as disciplinas para ' + ts.join(', ') + '.' : 'Tirou todas as disciplinas.'); changed = true;
+      }
+      if (o.name !== p.name) { pushLog(p, 'Renomeou de "' + o.name + '" para "' + p.name + '".'); changed = true; }
+      var edits = [];
+      if (o.desc !== p.desc) edits.push('a descrição');
+      if (o.notes !== p.notes) edits.push('as observações');
+      if (o.client !== p.client) edits.push('o cliente');
+      if (o.location !== p.location) edits.push('o local');
+      if (edits.length) { pushLog(p, 'Editou ' + edits.join(', ').replace(/, ([^,]*)$/, ' e $1') + '.'); changed = true; }
+    });
+    skipStatusLog = {};
+    takeSnap();
+    if (changed) {
+      if (!modalEl.hidden && editingId) renderTalk();
+      refreshData();
+    }
+    return changed;
+  }
+
+  /* =========================================================
      Conversa, ajustes e novidades
      ========================================================= */
   function nowISO() { return new Date().toISOString(); }
@@ -3208,7 +3293,7 @@
     p.comments.push({ id: uid(), by: currentUser() || '', at: nowISO(), text: text, kind: kind || '' });
   }
   function flagsHTML(p) {
-    var n = pendingAdj(p), c = (p.comments || []).filter(function (m) { return m.kind !== 'sys'; }).length;
+    var n = pendingAdj(p), c = (p.comments || []).filter(function (m) { return m.kind !== 'sys' && m.kind !== 'log'; }).length;
     var nw = hasNews(p);
     if (!n && !c && !nw) return '';
     return '<div class="p-flags">' +
@@ -3231,7 +3316,7 @@
   }
   function lastOtherMsg(p) {
     var me = currentUser();
-    var list = (p.comments || []).filter(function (c) { return c.by !== me; });
+    var list = (p.comments || []).filter(function (c) { return c.by !== me && c.kind !== 'log'; });
     return list.length ? list[list.length - 1] : null;
   }
   function involved(p) {
@@ -3321,8 +3406,9 @@
         (!pend ? '<button type="button" class="btn sm" data-talk="adj-clear" style="margin-top:6px">Limpar ajustes feitos</button>' : '') + '</div>';
     }
     var msgs = p.comments || [];
-    html += '<div class="talk-title">Mensagens</div>' +
+    html += '<div class="talk-title">Mensagens e histórico</div>' +
       '<div class="msgs" id="talkMsgs">' + (msgs.length ? msgs.map(function (m) {
+        if (m.kind === 'log') return '<div class="log-line"><b>' + esc(whoName(m.by)) + '</b> ' + esc(m.text.charAt(0).toLowerCase() + m.text.slice(1)) + ' <span>' + fmtWhen(m.at) + '</span></div>';
         return '<div class="msg' + (m.kind === 'sys' ? ' sys' : (m.by && m.by === me ? ' mine' : '')) + '"><div class="msg-h"><b>' + esc(whoName(m.by)) + '</b>' + fmtWhen(m.at) + '</div><div class="msg-t">' + esc(m.text) + '</div></div>';
       }).join('') : '<div class="talk-empty">Nenhuma mensagem ainda.</div>') + '</div>' +
       '<div class="msg-new"><textarea id="talk-text" rows="1" placeholder="Escreva uma mensagem…"></textarea><button type="button" class="btn btn-primary sm" data-talk="send">Enviar</button></div>';
@@ -3350,6 +3436,7 @@
     } else if (a === 'approve') {
       var done = doneStatusId();
       if (!done) { toast('Crie um status "Concluído" em Configurações.'); return; }
+      skipStatusLog[p.id] = true;
       changeStatus(p, done);
       addComment(p, 'Aprovou o projeto. Movido para ' + byId(state.statuses, done).name + '.', 'sys');
       syncStatusFields(p);
@@ -3365,6 +3452,7 @@
       var to = $('#ret-status').value;
       var me = currentUser() || '', at = nowISO();
       p.adjustments = (p.adjustments || []).concat(lines.map(function (x) { return { id: uid(), text: x, by: me, at: at, done: false, doneBy: '', doneAt: '' }; }));
+      skipStatusLog[p.id] = true;
       changeStatus(p, to);
       addComment(p, 'Devolveu com ' + lines.length + ' ajuste' + (lines.length > 1 ? 's' : '') + ':\n' + lines.map(function (x) { return '• ' + x; }).join('\n') + '\nVoltou para ' + byId(state.statuses, to).name + '.', 'sys');
       syncStatusFields(p);
@@ -3387,6 +3475,7 @@
     adj.doneAt = cb.checked ? nowISO() : '';
     var msg = '';
     if (cb.checked && !pendingAdj(p) && !isConfStatus(p.statusId) && confStatusId()) {
+      skipStatusLog[p.id] = true;
       changeStatus(p, confStatusId());
       addComment(p, 'Concluiu todos os ajustes. Voltou para ' + byId(state.statuses, confStatusId()).name + '.', 'sys');
       syncStatusFields(p);
@@ -3970,6 +4059,7 @@
   });
 
   purgeRefs();
+  takeSnap();
   renderAll();
   if (ghConfigured()) {
     ghConnect(true);
