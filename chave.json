@@ -20,6 +20,18 @@
         "iv": "h3anJTdoVAAplByZ",
         "data": "lQPnsAM19jF6LnQDXdpEbS0UtEL6PuJJj9QTQxaFgU75Zre0Ybk0Bqfd++PM1hp3XPmgeHV5QFSJ4eg+cWx3r2pkFj5Lw4WgoDVxKX7HXdsZI2Q7Qu8BGJY7c5aWBmER9dcE3bjJ82l1Ti1teA=="
       }
+    },
+    "cb-2": {
+      "name": "Diogo",
+      "lock": {
+        "v": 1,
+        "kdf": "PBKDF2-SHA256",
+        "iter": 310000,
+        "salt": "hidMT9TH/POXd8n1DlpfCA==",
+        "iv": "EW6ptLhgDocygH3R",
+        "data": "2oM4X4ZE+31q7jdNHFWPiDYeFnvk+l3RxTL94r2WIpMIzsG53H3Ve+xhctm9HzMAg41xkNJPIDhOA9wnk5638XCCxz/B3reT3A6KuCqwqlj425evxEAfYxtt2yd2z9yRBv9dTLgipFNLAgRfsw=="
+      },
+      "mustChange": true
     }
   },
   "admins": [
