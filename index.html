@@ -101,6 +101,17 @@
   .tab:hover { color: var(--text); }
   .tab.active { background: var(--surface); color: var(--primary); box-shadow: var(--shadow-sm); }
   .actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .user-btn { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 4px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: inherit; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .user-btn:hover { background: var(--hover); }
+  .user-btn .avatar { width: 22px; height: 22px; font-size: 10px; }
+  .users-tbl { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+  .user-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; }
+  .user-row .u-name { font-weight: 600; flex: 1; min-width: 120px; display: inline-flex; align-items: center; gap: 8px; }
+  .user-row .u-state { font-size: 12px; color: var(--muted); }
+  .user-row .u-state.ok { color: #22a06b; }
+  .user-row .u-admin { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+  .user-row form { display: flex; gap: 6px; flex-basis: 100%; }
+  .user-row form .input { flex: 1; }
   .sync {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 4px 10px; border-radius: 999px;
@@ -781,6 +792,7 @@
     <button class="tab" role="tab" data-tab="settings">Configurações</button>
   </nav>
   <div class="actions">
+    <button type="button" class="user-btn" id="userBtn" hidden title="Minha conta"><span class="avatar xs" id="userAv"></span><span id="userName"></span></button>
     <button type="button" class="sync" id="syncState" data-state="error" title="Conexão com o GitHub"><span class="dot"></span><span id="syncText">Não conectado</span></button>
     <button id="themeBtn" class="icon-btn" type="button" aria-label="Alternar tema"></button>
     <button id="newBtn" class="btn btn-primary btn-new" type="button" title="Novo projeto"><span class="plus">+</span><span class="lbl">Novo Projeto</span></button>
@@ -891,12 +903,43 @@
   </form>
 </div>
 
+<!-- Minha conta -->
+<div id="account" class="backdrop" hidden>
+  <form class="modal confirm-box" id="accountForm" autocomplete="off" novalidate>
+    <div class="modal-head"><h2 id="accountTitle">Minha conta</h2></div>
+    <div class="modal-body">
+      <p style="margin:0 0 12px" id="accountInfo"></p>
+      <div id="accountPassBox">
+        <div class="field" style="margin-bottom:10px">
+          <label for="acc-pass">Nova senha (mínimo 8 caracteres)</label>
+          <input id="acc-pass" type="password" autocomplete="new-password">
+        </div>
+        <div class="field">
+          <label for="acc-pass2">Repita a nova senha</label>
+          <input id="acc-pass2" type="password" autocomplete="new-password">
+        </div>
+        <small class="err" id="accErr" style="display:none"></small>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-danger" id="accLogout">Sair</button>
+      <div class="spacer"></div>
+      <button type="button" class="btn" id="accClose">Fechar</button>
+      <button type="submit" class="btn btn-primary" id="accSave">Trocar senha</button>
+    </div>
+  </form>
+</div>
+
 <!-- Senha para destrancar a chave -->
 <div id="unlock" class="backdrop" hidden>
   <form class="modal confirm-box" id="unlockForm" autocomplete="off" novalidate>
-    <div class="modal-head"><h2>Digite sua senha</h2></div>
+    <div class="modal-head"><h2>Entrar</h2></div>
     <div class="modal-body">
-      <p style="margin:0 0 12px">Para carregar seus projetos neste aparelho, digite a senha que você criou. Isso só é pedido uma vez em cada aparelho.</p>
+      <p style="margin:0 0 12px" id="unlockIntro">Escolha seu nome e digite sua senha. Isso só é pedido uma vez em cada aparelho.</p>
+      <div class="field" id="unlockUserField" style="margin-bottom:12px">
+        <label for="unlock-user">Usuário</label>
+        <select id="unlock-user"></select>
+      </div>
       <div class="field" id="unlockField">
         <label for="unlock-pass">Senha</label>
         <input id="unlock-pass" type="password" autocomplete="current-password">
@@ -1204,16 +1247,60 @@
         { headers: { 'Accept': 'application/vnd.github.raw+json' }, cache: 'no-store' });
       if (res.status !== 200) return null;
       var j = await res.json();
-      if (!j || !j.lock || !j.lock.data || !j.repo) return null;
+      if (!j || !j.repo || !((j.lock && j.lock.data) || (j.users && Object.keys(j.users).length))) return null;
       return j;
     } catch (e) { return null; }
+  }
+
+  /* Usuários: cada colaborador pode ter a própria senha, que destranca a mesma chave */
+  function keyUsers() { return (keyFile && keyFile.users) || {}; }
+  function hasUsers() { return Object.keys(keyUsers()).length > 0; }
+  function keyAdmins() { return (keyFile && Array.isArray(keyFile.admins)) ? keyFile.admins : []; }
+  function currentUser() { return gh.cfg && gh.cfg.user ? gh.cfg.user : null; }
+  function isAdmin() {
+    if (!keyFile) return true;
+    var admins = keyAdmins();
+    if (!admins.length) return true;
+    var me = currentUser();
+    return !!me && admins.indexOf(me) >= 0;
+  }
+
+  /* Lê o chave.json mais recente, aplica a mudança e grava de volta */
+  async function updateKeyFile(token, mutate) {
+    if (!site) return { ok: false, reason: 'site' };
+    var url = 'https://api.github.com/repos/' + encodeURIComponent(site.owner) + '/' + encodeURIComponent(site.repo) + '/contents/' + KEY_FILE;
+    var headers = { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
+    try {
+      var sha, body = null;
+      var cur = await fetch(url, { headers: headers, cache: 'no-store' });
+      if (cur.status === 200) {
+        var cj = await cur.json();
+        sha = cj.sha;
+        try { body = JSON.parse(fromBase64(cj.content)); } catch (e) { body = null; }
+      } else if (cur.status !== 404) return { ok: false, reason: cur.status };
+      body = body || {};
+      body.owner = body.owner || gh.cfg.owner; body.repo = body.repo || gh.cfg.repo;
+      mutate(body);
+      var put = { message: 'Atualiza chaves de acesso', content: toBase64(JSON.stringify(body, null, 2)) };
+      if (sha) put.sha = sha;
+      var res = await fetch(url, { method: 'PUT', headers: Object.assign({ 'Content-Type': 'application/json' }, headers), body: JSON.stringify(put), cache: 'no-store' });
+      if (res.status === 200 || res.status === 201) { keyFile = body; return { ok: true }; }
+      return { ok: false, reason: res.status };
+    } catch (e) { return { ok: false, reason: 'net' }; }
+  }
+  async function setUserPass(token, userId, name, pass) {
+    var lock = await lockToken(token, pass);
+    return updateKeyFile(token, function (b) {
+      b.users = b.users || {};
+      b.users[userId] = { name: name, lock: lock };
+    });
   }
 
   /* Grava o chave.json no repositório do site (precisa que a chave tenha acesso a ele) */
   async function saveKeyFile(token, pass) {
     if (!site) return { ok: false, reason: 'site' };
     var lock = await lockToken(token, pass);
-    var body = { owner: gh.cfg.owner, repo: gh.cfg.repo, lock: lock };
+    var body = Object.assign({}, keyFile || {}, { owner: gh.cfg.owner, repo: gh.cfg.repo, lock: lock });
     var url = 'https://api.github.com/repos/' + encodeURIComponent(site.owner) + '/' + encodeURIComponent(site.repo) + '/contents/' + KEY_FILE;
     var headers = { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
     try {
@@ -1399,7 +1486,7 @@
   });
 
   var state = load();
-  var ui = { search: '', openFilter: null, respOpen: false, ghSetup: false, ghPass: null };
+  var ui = { search: '', openFilter: null, respOpen: false, ghSetup: false, ghPass: null, userPass: null };
 
   var FILTERS = [
     { key: 'status', label: 'Status', list: 'statuses', field: 'statusId' },
@@ -1567,6 +1654,11 @@
   });
 
   function showTab() {
+    var adm = isAdmin();
+    var setTab = $('.tab[data-tab="settings"]');
+    if (setTab) setTab.hidden = !adm;
+    if (!adm && state.tab === 'settings') state.tab = 'projects';
+    renderUserBtn();
     $$('.tab').forEach(function (b) {
       var on = b.dataset.tab === state.tab;
       b.classList.toggle('active', on);
@@ -2302,7 +2394,7 @@
         (keyFile ? ' Nos outros aparelhos, basta abrir o site e digitar sua senha.' : '') + '</p>' +
         '<div class="gh-actions">' +
         '<button type="button" class="btn sm" data-action="gh-reload">Recarregar do GitHub</button>' +
-        '<button type="button" class="btn sm" data-action="gh-newpass">' + (keyFile ? 'Trocar senha' : 'Criar senha para outros aparelhos') + '</button>' +
+        '<button type="button" class="btn sm" data-action="gh-newpass">' + (keyFile ? 'Trocar senha da empresa' : 'Criar senha da empresa') + '</button>' +
         '<button type="button" class="btn sm" data-action="gh-newkey">Trocar chave de acesso</button>' +
         '<button type="button" class="btn btn-danger sm" data-action="gh-disconnect">Desconectar este aparelho</button>' +
         '</div>' + passForm() + '</div>';
@@ -2369,7 +2461,40 @@
 
   function renderSettings() {
     closePop();
-    settingsEl.innerHTML = githubPanel() + LISTS.map(listPanel).join('') + colabPanel() + dataPanel();
+    showTab();
+    if (!isAdmin()) { settingsEl.innerHTML = ''; return; }
+    settingsEl.innerHTML = githubPanel() + (ghConfigured() && site ? usersPanel() : '') + LISTS.map(listPanel).join('') + colabPanel() + dataPanel();
+  }
+
+  function usersPanel() {
+    var users = keyUsers(), admins = keyAdmins(), me = currentUser();
+    var ids = state.collaborators.map(function (c) { return c.id; });
+    var rows = state.collaborators.map(function (c) {
+      var u = users[c.id];
+      var open = ui.userPass === c.id;
+      return '<div class="user-row" data-uid="' + esc(c.id) + '">' +
+        '<span class="u-name"><span class="avatar xs" style="background:' + esc(c.color) + '">' + esc(initials(c.name)) + '</span>' + esc(c.name) + (c.id === me ? ' <span class="u-state">(você)</span>' : '') + '</span>' +
+        '<span class="u-state' + (u ? ' ok' : '') + '">' + (u ? 'Tem acesso' : 'Sem acesso') + '</span>' +
+        (u ? '<label class="u-admin"><input type="checkbox" data-uadmin' + (admins.indexOf(c.id) >= 0 ? ' checked' : '') + '> Administrador</label>' : '') +
+        '<button type="button" class="btn sm" data-action="u-pass">' + (u ? 'Trocar senha' : 'Criar acesso') + '</button>' +
+        (u && c.id !== me ? '<button type="button" class="btn btn-danger sm" data-action="u-remove">Remover acesso</button>' : '') +
+        (open ? '<form data-action="u-pass-save"><input class="input" type="password" name="p1" placeholder="Senha inicial (mín. 8)" autocomplete="new-password"><input class="input" type="password" name="p2" placeholder="Repita" autocomplete="new-password"><button type="submit" class="btn btn-primary sm">Salvar</button></form>' : '') +
+        '</div>';
+    }).join('');
+    var orphans = Object.keys(users).filter(function (id) { return ids.indexOf(id) < 0; }).map(function (id) {
+      return '<div class="user-row" data-uid="' + esc(id) + '"><span class="u-name">' + esc(users[id].name || 'Usuário removido') + '</span><span class="u-state">não está mais nos colaboradores</span>' +
+        '<button type="button" class="btn btn-danger sm" data-action="u-remove">Remover acesso</button></div>';
+    }).join('');
+    var legacy = keyFile && keyFile.lock;
+    var hint = !admins.length
+      ? '<p class="sub"><b>Comece por você:</b> crie seu acesso, marque "Administrador", depois clique no seu nome no topo e em "Sair" para entrar com seu usuário.</p>'
+      : '';
+    return '<div class="panel" data-users><h3>Usuários e senhas</h3>' +
+      '<p class="sub">Cada colaborador entra com o próprio nome e senha. Só administradores veem esta aba de Configurações. Cada pessoa pode trocar a própria senha clicando no seu nome, no topo.</p>' + hint +
+      '<div class="users-tbl">' + (rows || '<div class="items-empty">Cadastre os colaboradores abaixo para criar os acessos.</div>') + orphans + '</div>' +
+      (legacy ? '<div class="gh-status error" style="margin-top:12px">A senha única da empresa ainda funciona. Depois que todos tiverem o próprio acesso, desative-a.' +
+        (admins.length ? ' <button type="button" class="btn btn-danger sm" data-action="u-legacy-off" style="margin-left:8px">Desativar senha da empresa</button>' : '') + '</div>' : '') +
+      '</div>';
   }
 
   function listDef(key) { return LISTS.filter(function (d) { return d.key === key; })[0]; }
@@ -2383,6 +2508,34 @@
     var key = panel ? panel.dataset.list : null;
     var id = li ? li.dataset.id : null;
 
+    var urow = btn.closest('.user-row');
+    if (urow && action === 'u-pass') {
+      ui.userPass = ui.userPass === urow.dataset.uid ? null : urow.dataset.uid;
+      renderSettings();
+      var pi = settingsEl.querySelector('.user-row[data-uid="' + ui.userPass + '"] input[name="p1"]');
+      if (pi) pi.focus();
+      return;
+    }
+    if (urow && action === 'u-remove') {
+      var uid0 = urow.dataset.uid;
+      var nm = (keyUsers()[uid0] || {}).name || 'este usuário';
+      confirmBox('Remover o acesso de ' + nm + '?', 'A senha dele deixa de funcionar nos próximos acessos. O colaborador continua nos projetos.', 'Remover').then(function (ok) {
+        if (!ok) return;
+        updateKeyFile(gh.cfg.token, function (b) {
+          if (b.users) delete b.users[uid0];
+          if (Array.isArray(b.admins)) b.admins = b.admins.filter(function (x) { return x !== uid0; });
+        }).then(function (r) { toast(r.ok ? 'Acesso removido.' : 'Não consegui salvar agora. Tente de novo.'); renderSettings(); });
+      });
+      return;
+    }
+    if (action === 'u-legacy-off') {
+      confirmBox('Desativar a senha da empresa?', 'Depois disso, só entra quem tem usuário e senha próprios. Quem já está conectado continua conectado até sair.', 'Desativar').then(function (ok) {
+        if (!ok) return;
+        updateKeyFile(gh.cfg.token, function (b) { delete b.lock; })
+          .then(function (r) { toast(r.ok ? 'Senha da empresa desativada.' : 'Não consegui salvar agora. Tente de novo.'); renderSettings(); });
+      });
+      return;
+    }
     if (action === 'color') {
       var item = byId(state[key], id);
       if (!item) return;
@@ -2506,9 +2659,42 @@
       if (c) input.value = c.name;
     }
   });
+  settingsEl.addEventListener('change', function (e) {
+    var cb = e.target.closest('[data-uadmin]');
+    if (!cb) return;
+    var uid1 = cb.closest('.user-row').dataset.uid;
+    var on = cb.checked;
+    if (!on && uid1 === currentUser() && keyAdmins().length === 1) {
+      cb.checked = true; toast('Precisa ter pelo menos um administrador.'); return;
+    }
+    updateKeyFile(gh.cfg.token, function (b) {
+      var a = Array.isArray(b.admins) ? b.admins.slice() : [];
+      var i = a.indexOf(uid1);
+      if (on && i < 0) a.push(uid1);
+      if (!on && i >= 0) a.splice(i, 1);
+      b.admins = a;
+    }).then(function (r) {
+      if (!r.ok) { toast('Não consegui salvar agora. Tente de novo.'); }
+      showTab(); renderSettings();
+    });
+  });
   settingsEl.addEventListener('submit', function (e) {
     e.preventDefault();
     var f = e.target;
+    if (f.dataset.action === 'u-pass-save') {
+      var uid2 = f.closest('.user-row').dataset.uid;
+      var p1u = f.querySelector('[name="p1"]').value, p2u = f.querySelector('[name="p2"]').value;
+      var badu = !p1u || p1u.length < 8 ? 'A senha precisa ter pelo menos 8 caracteres.' : (p1u !== p2u ? 'As duas senhas não são iguais.' : null);
+      if (badu) { toast(badu); return; }
+      var col = byId(state.collaborators, uid2);
+      f.querySelector('button').disabled = true;
+      setUserPass(gh.cfg.token, uid2, col ? col.name : '', p1u).then(function (r) {
+        if (r.ok) { ui.userPass = null; toast('Acesso salvo para ' + (col ? col.name : 'o usuário') + '.'); }
+        else toast('Não consegui salvar agora. Tente de novo.');
+        renderSettings();
+      });
+      return;
+    }
     if (f.id === 'ghForm') {
       (async function () {
         var owner = $('#gh-owner').value.trim().replace(/^@/, '');
@@ -3099,6 +3285,7 @@
     if (e.key !== 'Escape') return;
     if (!confirmEl.hidden) { closeConfirm(false); return; }
     if (!unlockEl.hidden) { closeUnlock(); setSync('error', 'Não conectado'); return; }
+    if (!accountEl.hidden) { closeAccount(); return; }
     if (popCtx) { closePop(); return; }
     if (progCtx) { closeProgPop(); return; }
     if (prioCtx) { closePrioPop(); return; }
@@ -3355,6 +3542,16 @@
   function openUnlock() {
     $('#unlockField').classList.remove('invalid');
     $('#unlock-pass').value = '';
+    var sel = $('#unlock-user'), users = keyUsers();
+    var opts = Object.keys(users).map(function (id) { return { id: id, name: users[id].name || id }; })
+      .sort(function (a, b) { return collator.compare(a.name, b.name); })
+      .map(function (u) { return '<option value="' + esc(u.id) + '">' + esc(u.name) + '</option>'; });
+    if (keyFile && keyFile.lock) opts.push('<option value="">Senha da empresa</option>');
+    sel.innerHTML = opts.join('');
+    var last = readLocal('steincorpProjetos.lastUser.v1');
+    if (last && users[last]) sel.value = last;
+    $('#unlockUserField').hidden = !hasUsers();
+    $('#unlockIntro').textContent = hasUsers() ? 'Escolha seu nome e digite sua senha. Isso só é pedido uma vez em cada aparelho.' : 'Digite a senha da empresa. Isso só é pedido uma vez em cada aparelho.';
     unlockEl.hidden = false;
     document.body.classList.add('no-scroll');
     setTimeout(function () { $('#unlock-pass').focus(); }, 40);
@@ -3374,7 +3571,9 @@
     var btn = $('#unlockBtn');
     btn.disabled = true; btn.textContent = 'Abrindo…';
     var token = null;
-    try { token = await unlockToken(keyFile.lock, $('#unlock-pass').value); } catch (err) { token = null; }
+    var who = hasUsers() ? $('#unlock-user').value : '';
+    var lockObj = who ? (keyUsers()[who] || {}).lock : keyFile.lock;
+    try { token = lockObj ? await unlockToken(lockObj, $('#unlock-pass').value) : null; } catch (err) { token = null; }
     btn.disabled = false; btn.textContent = 'Entrar';
     if (!token) {
       $('#unlockErr').textContent = 'Senha incorreta. Tente de novo.';
@@ -3382,23 +3581,82 @@
       $('#unlock-pass').select();
       return;
     }
-    gh.cfg = { owner: keyFile.owner, repo: keyFile.repo, token: token };
+    gh.cfg = { owner: keyFile.owner, repo: keyFile.repo, token: token, user: who || null };
     writeLocal(GH_KEY, gh.cfg);
+    if (who) writeLocal('steincorpProjetos.lastUser.v1', who);
     closeUnlock();
+    showTab();
     gh.message = '';
     await ghConnect(false);
     renderSettings();
   });
 
   $('#syncState').addEventListener('click', function () {
+    if (!isAdmin()) { openAccount(); return; }
     state.tab = 'settings'; save(); showTab(); renderFilters(); window.scrollTo(0, 0);
+  });
+
+  /* ---------- Minha conta ---------- */
+  function renderUserBtn() {
+    var b = document.getElementById('userBtn');
+    if (!b) return;
+    if (!ghConfigured()) { b.hidden = true; return; }
+    var me = currentUser();
+    var c = me ? byId(state.collaborators, me) : null;
+    var name = c ? c.name : (me ? ((keyUsers()[me] || {}).name || 'Usuário') : 'Senha da empresa');
+    $('#userName').textContent = name;
+    var av = $('#userAv');
+    av.textContent = me ? initials(name) : '•';
+    av.style.background = c ? c.color : 'var(--muted)';
+    b.hidden = false;
+  }
+  var accountEl = $('#account');
+  function openAccount() {
+    var me = currentUser();
+    $('#accErr').style.display = 'none';
+    $('#acc-pass').value = ''; $('#acc-pass2').value = '';
+    $('#accountPassBox').hidden = !me;
+    $('#accSave').hidden = !me;
+    $('#accountTitle').textContent = me ? ($('#userName').textContent || 'Minha conta') : 'Senha da empresa';
+    $('#accountInfo').textContent = me
+      ? 'Você está conectado com o seu usuário' + (isAdmin() ? ' (administrador)' : '') + '. Aqui você pode trocar sua senha ou sair deste aparelho.'
+      : 'Este aparelho entrou com a senha única da empresa. Saia e entre com seu usuário quando ele estiver criado.';
+    accountEl.hidden = false;
+    document.body.classList.add('no-scroll');
+    if (me) setTimeout(function () { $('#acc-pass').focus(); }, 40);
+  }
+  function closeAccount() { accountEl.hidden = true; document.body.classList.remove('no-scroll'); }
+  $('#userBtn').addEventListener('click', openAccount);
+  $('#accClose').addEventListener('click', closeAccount);
+  accountEl.addEventListener('click', function (e) { if (e.target === accountEl) closeAccount(); });
+  $('#accLogout').addEventListener('click', function () {
+    closeAccount();
+    removeLocal(GH_KEY);
+    gh.cfg = null; gh.ready = false; gh.sha = null; gh.message = ''; gh.conflict = false;
+    setSync('error', 'Não conectado');
+    showTab(); renderSettings();
+    fetchKeyFile().then(function (k) { keyFile = k; if (k) openUnlock(); });
+  });
+  $('#accountForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var me = currentUser();
+    if (!me || !ghConfigured()) return;
+    var p1 = $('#acc-pass').value, p2 = $('#acc-pass2').value;
+    var err = !p1 || p1.length < 8 ? 'A senha precisa ter pelo menos 8 caracteres.' : (p1 !== p2 ? 'As duas senhas não são iguais.' : null);
+    if (err) { $('#accErr').textContent = err; $('#accErr').style.display = 'block'; return; }
+    var btn = $('#accSave'); btn.disabled = true;
+    var name = (keyUsers()[me] || {}).name || $('#userName').textContent;
+    var r = await setUserPass(gh.cfg.token, me, name, p1);
+    btn.disabled = false;
+    if (r.ok) { closeAccount(); toast('Senha trocada. Use a nova senha nos próximos acessos.'); }
+    else { $('#accErr').textContent = 'Não consegui salvar agora. Tente de novo.'; $('#accErr').style.display = 'block'; }
   });
 
   purgeRefs();
   renderAll();
   if (ghConfigured()) {
     ghConnect(true);
-    fetchKeyFile().then(function (k) { keyFile = k; if (!settingsEl.contains(document.activeElement)) renderSettings(); });
+    fetchKeyFile().then(function (k) { keyFile = k; showTab(); if (!settingsEl.contains(document.activeElement)) renderSettings(); });
   } else {
     setSync('busy', 'Verificando…');
     fetchKeyFile().then(function (k) {
