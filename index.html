@@ -101,6 +101,49 @@
   .tab:hover { color: var(--text); }
   .tab.active { background: var(--surface); color: var(--primary); box-shadow: var(--shadow-sm); }
   .actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .bell-wrap { position: relative; }
+  .bell { position: relative; }
+  .bell svg { width: 18px; height: 18px; }
+  .bell-n { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--danger); color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; }
+  .bell-pop { position: absolute; right: 0; top: calc(100% + 8px); z-index: 60; width: min(360px, calc(100vw - 24px)); max-height: 70vh; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-lg); }
+  .bell-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--border); font-weight: 700; }
+  .bell-head button { border: 0; background: none; color: var(--primary); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .bell-item { display: block; width: 100%; text-align: left; padding: 10px 14px; border: 0; border-bottom: 1px solid var(--border); background: transparent; color: inherit; font: inherit; cursor: pointer; }
+  .bell-item:hover { background: var(--hover); }
+  .bell-item b { display: block; font-size: 13px; }
+  .bell-item span { display: block; font-size: 12.5px; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bell-empty { padding: 18px 14px; text-align: center; color: var(--muted); font-size: 13px; }
+  .talk { border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px; gap: 10px; }
+  .talk-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border-radius: 10px; background: var(--primary-soft); }
+  .talk-actions .t { flex: 1; min-width: 180px; font-size: 13px; font-weight: 600; }
+  .talk .btn.btn-ok { background: #22a06b; border-color: #22a06b; color: #fff; }
+  .talk .btn.btn-ok:hover { filter: brightness(1.05); background: #22a06b; }
+  .ret-form { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; }
+  .ret-form textarea { min-height: 80px; }
+  .ret-form .row2 { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .ret-form .row2 select { flex: 1; min-width: 160px; }
+  .adj-list { display: flex; flex-direction: column; gap: 4px; }
+  .adj-title, .talk-title { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+  .adj { display: flex; align-items: flex-start; gap: 8px; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+  .adj:hover { background: var(--hover); }
+  .talk .adj input[type="checkbox"] { margin-top: 3px; width: auto; min-height: 0; padding: 0; flex: none; accent-color: #22a06b; }
+  .adj.done .adj-t { text-decoration: line-through; color: var(--muted); }
+  .adj small { display: block; color: var(--muted); font-size: 11.5px; }
+  .msgs { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; }
+  .msg { padding: 8px 10px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); }
+  .msg.mine { background: var(--primary-soft); }
+  .msg.sys { background: transparent; border-style: dashed; }
+  .msg-h { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+  .msg-h b { color: var(--text); }
+  .msg-t { white-space: pre-wrap; word-break: break-word; font-size: 13.5px; }
+  .msg-new { display: flex; gap: 8px; align-items: flex-end; }
+  .msg-new textarea { flex: 1; min-height: 40px; }
+  .talk-empty { font-size: 13px; color: var(--muted); }
+  .p-flags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 3px; }
+  .flag { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700; padding: 1px 7px; border-radius: 999px; }
+  .flag.adj { background: rgba(229,72,77,.14); color: var(--danger); }
+  .flag.msgc { background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
+  .flag.newc { background: var(--primary); color: #fff; }
   .user-btn { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 4px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: inherit; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
   .user-btn:hover { background: var(--hover); }
   .user-btn .avatar { width: 22px; height: 22px; font-size: 10px; }
@@ -792,6 +835,7 @@
     <button class="tab" role="tab" data-tab="settings">Configurações</button>
   </nav>
   <div class="actions">
+    <div class="bell-wrap"><button type="button" class="icon-btn bell" id="bellBtn" hidden title="Novidades" aria-label="Novidades"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="bell-n" id="bellN" hidden></span></button><div class="bell-pop" id="bellPop" hidden></div></div>
     <button type="button" class="user-btn" id="userBtn" hidden title="Minha conta"><span class="avatar xs" id="userAv"></span><span id="userName"></span></button>
     <button type="button" class="sync" id="syncState" data-state="error" title="Conexão com o GitHub"><span class="dot"></span><span id="syncText">Não conectado</span></button>
     <button id="themeBtn" class="icon-btn" type="button" aria-label="Alternar tema"></button>
@@ -893,6 +937,7 @@
         <label for="f-notes">Observações</label>
         <textarea id="f-notes" rows="3"></textarea>
       </div>
+      <div class="field full talk" id="talkBox" hidden></div>
     </div>
     <div class="modal-foot">
       <button type="button" class="btn btn-danger" id="deleteBtn">Excluir</button>
@@ -1110,7 +1155,13 @@
         notes: String(p.notes || ''),
         progress: normProgress(p.progress, p.statusId, out.statuses),
         createdAt: /^\d{4}-\d{2}-\d{2}$/.test(p.createdAt || '') ? p.createdAt : '',
-        completedAt: /^\d{4}-\d{2}-\d{2}$/.test(p.completedAt || '') ? p.completedAt : ''
+        completedAt: /^\d{4}-\d{2}-\d{2}$/.test(p.completedAt || '') ? p.completedAt : '',
+        comments: (Array.isArray(p.comments) ? p.comments : []).filter(function (c) { return c && c.text; }).map(function (c) {
+          return { id: String(c.id || ''), by: String(c.by || ''), at: String(c.at || ''), text: String(c.text), kind: c.kind ? String(c.kind) : '' };
+        }),
+        adjustments: (Array.isArray(p.adjustments) ? p.adjustments : []).filter(function (a) { return a && a.text; }).map(function (a) {
+          return { id: String(a.id || ''), text: String(a.text), by: String(a.by || ''), at: String(a.at || ''), done: !!a.done, doneBy: String(a.doneBy || ''), doneAt: String(a.doneAt || '') };
+        })
       };
     });
     var f = emptyFilters();
@@ -1660,7 +1711,7 @@
     var setTab = $('.tab[data-tab="settings"]');
     if (setTab) setTab.hidden = !adm;
     if (!adm && state.tab === 'settings') state.tab = 'projects';
-    renderUserBtn();
+    renderUserBtn(); renderBell();
     $$('.tab').forEach(function (b) {
       var on = b.dataset.tab === state.tab;
       b.classList.toggle('active', on);
@@ -1902,7 +1953,7 @@
     var sub = isDone(p) ? '' : (p.notes || p.desc || '');
     return '<div class="row" data-id="' + esc(p.id) + '" tabindex="0" style="--row-color:' + esc(color) + '">' +
       '<div class="cell handle" title="Arraste para mover">' + ICON.grip + '</div>' +
-      '<div class="cell c-name"><div class="p-name">' + esc(p.name) + '</div>' + (sub ? '<div class="p-desc">' + esc(sub) + '</div>' : '') + '</div>' +
+      '<div class="cell c-name"><div class="p-name">' + esc(p.name) + '</div>' + (sub ? '<div class="p-desc">' + esc(sub) + '</div>' : '') + flagsHTML(p) + '</div>' +
       '<div class="cell fill c-prio" data-label="Prioridade" tabindex="0" role="button" title="Clique para mudar a prioridade">' + pill(pr, 'Sem prioridade') + '</div>' +
       '<div class="cell c-due" data-label="Prazo" tabindex="0" role="button" title="Clique para mudar o prazo">' + dueHTML(p) + '</div>' +
       '<div class="cell c-prog" data-label="Andamento" tabindex="0" role="button" title="Clique para mudar o andamento">' + progHTML(p.progress) + '</div>' +
@@ -2129,7 +2180,7 @@
     return '<div class="card" data-id="' + esc(p.id) + '" tabindex="0" style="--c:' + esc(pr ? pr.color : 'var(--border)') + '">' +
       '<div class="card-top"><span class="card-title">' + esc(p.name) + '</span><span class="card-grip" title="Arraste para mover">' + ICON.grip + '</span></div>' +
       (p.desc ? '<div class="card-desc">' + esc(p.desc) + '</div>' : '') +
-      '<div class="card-meta">' + pill(pr, 'Sem prioridade', 'sm') + typesHTML(p, '') + '</div>' +
+      '<div class="card-meta">' + pill(pr, 'Sem prioridade', 'sm') + typesHTML(p, '') + '</div>' + flagsHTML(p) +
       '<div class="card-prog" title="Andamento">' + progHTML(p.progress) + '</div>' +
       '<div class="card-foot">' + dueHTML(p) + avatarsHTML(p.responsibles, false) + '</div>' +
       '</div>';
@@ -3116,6 +3167,225 @@
     sel.value = byId(list, value) ? value : '';
   }
 
+  /* =========================================================
+     Conversa, ajustes e novidades
+     ========================================================= */
+  function nowISO() { return new Date().toISOString(); }
+  function whoName(id) {
+    if (!id) return 'Alguém';
+    var c = byId(state.collaborators, id);
+    if (c) return c.name;
+    var u = keyUsers()[id];
+    return u && u.name ? u.name : 'Ex-usuário';
+  }
+  function fmtWhen(iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) return '';
+    return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+  function isConfStatus(statusId) {
+    var st = byId(state.statuses, statusId);
+    return !!st && norm(st.name).indexOf('confer') >= 0;
+  }
+  function confStatusId() { var st = state.statuses.filter(function (x) { return norm(x.name).indexOf('confer') >= 0; })[0]; return st ? st.id : ''; }
+  function doneStatusId() { var st = state.statuses.filter(function (x) { return isDoneStatus(x.id); })[0]; return st ? st.id : ''; }
+  function pendingAdj(p) { return (p.adjustments || []).filter(function (a) { return !a.done; }).length; }
+  function addComment(p, text, kind) {
+    p.comments = p.comments || [];
+    p.comments.push({ id: uid(), by: currentUser() || '', at: nowISO(), text: text, kind: kind || '' });
+  }
+  function flagsHTML(p) {
+    var n = pendingAdj(p), c = (p.comments || []).filter(function (m) { return m.kind !== 'sys'; }).length;
+    var nw = hasNews(p);
+    if (!n && !c && !nw) return '';
+    return '<div class="p-flags">' +
+      (n ? '<span class="flag adj" title="Ajustes pendentes">⚠ ' + n + ' ajuste' + (n > 1 ? 's' : '') + '</span>' : '') +
+      (nw ? '<span class="flag newc" title="Mensagem nova">● novo</span>' : (c ? '<span class="flag msgc" title="Mensagens">💬 ' + c + '</span>' : '')) +
+      '</div>';
+  }
+
+  /* O que cada usuário já viu (guardado neste aparelho) */
+  function seenKey() { return 'steincorpProjetos.seen.' + (currentUser() || '_'); }
+  function seenMap() {
+    var m = readLocal(seenKey());
+    if (!m || typeof m !== 'object') { m = { since: nowISO(), p: {} }; writeLocal(seenKey(), m); }
+    m.p = m.p || {};
+    return m;
+  }
+  function markSeen(pid) {
+    if (!currentUser()) return;
+    var m = seenMap(); m.p[pid] = nowISO(); writeLocal(seenKey(), m);
+  }
+  function lastOtherMsg(p) {
+    var me = currentUser();
+    var list = (p.comments || []).filter(function (c) { return c.by !== me; });
+    return list.length ? list[list.length - 1] : null;
+  }
+  function involved(p) {
+    var me = currentUser();
+    return p.responsibles.indexOf(me) >= 0 || (p.comments || []).some(function (c) { return c.by === me; });
+  }
+  function hasNews(p) {
+    var me = currentUser();
+    if (!me || !involved(p)) return false;
+    var last = lastOtherMsg(p);
+    if (!last) return false;
+    var m = seenMap();
+    var ref = m.p[p.id] || m.since;
+    return last.at > ref;
+  }
+  var bellOpen = false;
+  function renderBell() {
+    var btn = $('#bellBtn');
+    if (!btn) return;
+    var me = currentUser();
+    btn.hidden = !(me && ghConfigured());
+    if (btn.hidden) { $('#bellPop').hidden = true; return; }
+    seenMap();
+    var news = state.projects.filter(hasNews).sort(function (a, b) { return lastOtherMsg(b).at.localeCompare(lastOtherMsg(a).at); });
+    var nEl = $('#bellN');
+    nEl.hidden = !news.length; nEl.textContent = news.length;
+    var pop = $('#bellPop');
+    pop.hidden = !bellOpen;
+    if (!bellOpen) return;
+    pop.innerHTML = '<div class="bell-head"><span>Novidades</span>' + (news.length ? '<button type="button" data-bell-all>Marcar tudo como visto</button>' : '') + '</div>' +
+      (news.length ? news.map(function (p) {
+        var m = lastOtherMsg(p);
+        return '<button type="button" class="bell-item" data-bell="' + esc(p.id) + '"><b>' + esc(p.name) + '</b><span>' + esc(whoName(m.by)) + ': ' + esc(m.text) + '</span><span>' + fmtWhen(m.at) + '</span></button>';
+      }).join('') : '<div class="bell-empty">Nada novo por aqui.</div>');
+  }
+  $('#bellBtn').addEventListener('click', function (e) { e.stopPropagation(); bellOpen = !bellOpen; renderBell(); });
+  $('#bellPop').addEventListener('click', function (e) {
+    var all = e.target.closest('[data-bell-all]');
+    if (all) { state.projects.filter(hasNews).forEach(function (p) { markSeen(p.id); }); bellOpen = false; renderBell(); refreshData(); return; }
+    var it = e.target.closest('[data-bell]');
+    if (it) { bellOpen = false; renderBell(); openProject(it.dataset.bell); }
+  });
+  document.addEventListener('pointerdown', function (e) {
+    if (bellOpen && !e.target.closest('.bell-wrap')) { bellOpen = false; renderBell(); }
+  });
+
+  /* Seção de conversa dentro da ficha do projeto */
+  var talkUi = { ret: false };
+  function syncStatusFields(p) {
+    fStatus.value = p.statusId;
+    if (fPriority && byId(state.priorities, p.priorityId) !== undefined) fPriority.value = p.priorityId;
+    $('#f-progress').value = p.progress; $('#f-progress-range').value = p.progress; paintRange($('#f-progress-range'));
+  }
+  function renderTalk() {
+    var box = $('#talkBox');
+    var p = editingId ? byId(state.projects, editingId) : null;
+    if (!p) { box.hidden = true; box.innerHTML = ''; return; }
+    box.hidden = false;
+    var me = currentUser();
+    var html = '';
+    if (isConfStatus(p.statusId)) {
+      html += '<div class="talk-actions"><span class="t">Este projeto está em conferência.</span>' +
+        '<button type="button" class="btn btn-ok sm" data-talk="approve">Aprovar</button>' +
+        '<button type="button" class="btn btn-danger sm" data-talk="ret-open">Devolver com ajustes</button></div>';
+      if (talkUi.ret) {
+        var opts = state.statuses.filter(function (x) { return !isConfStatus(x.id) && !isDoneStatus(x.id); });
+        var def = opts.filter(function (x) { return norm(x.name).indexOf('andamento') >= 0; })[0] || opts[0];
+        html += '<div class="ret-form"><span class="adj-title">O que precisa ser ajustado? (um item por linha)</span>' +
+          '<textarea id="ret-text" placeholder="Ex.: Pilar P3 sem armadura de espera"></textarea>' +
+          '<div class="row2"><span class="adj-title">Voltar para</span><select id="ret-status">' + opts.map(function (x) {
+            return '<option value="' + esc(x.id) + '"' + (def && def.id === x.id ? ' selected' : '') + '>' + esc(x.name) + '</option>';
+          }).join('') + '</select>' +
+          '<button type="button" class="btn sm" data-talk="ret-cancel">Cancelar</button>' +
+          '<button type="button" class="btn btn-danger sm" data-talk="ret-send">Devolver</button></div></div>';
+      }
+    }
+    var adjs = p.adjustments || [];
+    if (adjs.length) {
+      var pend = adjs.filter(function (a) { return !a.done; }).length;
+      html += '<div><div class="adj-title">Ajustes (' + (adjs.length - pend) + ' de ' + adjs.length + ' feitos)</div><div class="adj-list">' +
+        adjs.map(function (a) {
+          return '<label class="adj' + (a.done ? ' done' : '') + '"><input type="checkbox" data-adj="' + esc(a.id) + '"' + (a.done ? ' checked' : '') + '>' +
+            '<span><span class="adj-t">' + esc(a.text) + '</span><small>Pedido por ' + esc(whoName(a.by)) + ' em ' + fmtWhen(a.at) +
+            (a.done ? ' · feito por ' + esc(whoName(a.doneBy)) + ' em ' + fmtWhen(a.doneAt) : '') + '</small></span></label>';
+        }).join('') + '</div>' +
+        (!pend ? '<button type="button" class="btn sm" data-talk="adj-clear" style="margin-top:6px">Limpar ajustes feitos</button>' : '') + '</div>';
+    }
+    var msgs = p.comments || [];
+    html += '<div class="talk-title">Conversa</div>' +
+      '<div class="msgs" id="talkMsgs">' + (msgs.length ? msgs.map(function (m) {
+        return '<div class="msg' + (m.kind === 'sys' ? ' sys' : (m.by && m.by === me ? ' mine' : '')) + '"><div class="msg-h"><b>' + esc(whoName(m.by)) + '</b>' + fmtWhen(m.at) + '</div><div class="msg-t">' + esc(m.text) + '</div></div>';
+      }).join('') : '<div class="talk-empty">Nenhuma mensagem ainda.</div>') + '</div>' +
+      '<div class="msg-new"><textarea id="talk-text" rows="1" placeholder="Escreva uma mensagem…"></textarea><button type="button" class="btn btn-primary sm" data-talk="send">Enviar</button></div>';
+    box.innerHTML = html;
+    var ml = $('#talkMsgs'); if (ml) ml.scrollTop = ml.scrollHeight;
+    var tt = $('#talk-text'); if (tt) { tt.classList.add('autogrow'); tt.addEventListener('input', function () { autoGrow(tt); }); }
+  }
+  function talkChanged(p, msg) {
+    markSeen(p.id);
+    save(); refreshData(); renderTalk();
+    if (msg) toast(msg);
+  }
+  $('#talkBox').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-talk]');
+    if (!b) return;
+    var p = editingId ? byId(state.projects, editingId) : null;
+    if (!p) return;
+    var a = b.dataset.talk;
+    if (a === 'send') {
+      var t = $('#talk-text').value.trim();
+      if (!t) { $('#talk-text').focus(); return; }
+      addComment(p, t);
+      talkChanged(p);
+      var t2 = $('#talk-text'); if (t2) t2.focus();
+    } else if (a === 'approve') {
+      var done = doneStatusId();
+      if (!done) { toast('Crie um status "Concluído" em Configurações.'); return; }
+      changeStatus(p, done);
+      addComment(p, 'Aprovou o projeto. Movido para ' + byId(state.statuses, done).name + '.', 'sys');
+      syncStatusFields(p);
+      talkUi.ret = false;
+      talkChanged(p, 'Projeto aprovado.');
+    } else if (a === 'ret-open') {
+      talkUi.ret = true; renderTalk(); var rt = $('#ret-text'); if (rt) rt.focus();
+    } else if (a === 'ret-cancel') {
+      talkUi.ret = false; renderTalk();
+    } else if (a === 'ret-send') {
+      var lines = $('#ret-text').value.split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+      if (!lines.length) { $('#ret-text').focus(); toast('Escreva pelo menos um ajuste.'); return; }
+      var to = $('#ret-status').value;
+      var me = currentUser() || '', at = nowISO();
+      p.adjustments = (p.adjustments || []).concat(lines.map(function (x) { return { id: uid(), text: x, by: me, at: at, done: false, doneBy: '', doneAt: '' }; }));
+      changeStatus(p, to);
+      addComment(p, 'Devolveu com ' + lines.length + ' ajuste' + (lines.length > 1 ? 's' : '') + ':\n' + lines.map(function (x) { return '• ' + x; }).join('\n') + '\nVoltou para ' + byId(state.statuses, to).name + '.', 'sys');
+      syncStatusFields(p);
+      talkUi.ret = false;
+      talkChanged(p, 'Projeto devolvido com ajustes.');
+    } else if (a === 'adj-clear') {
+      p.adjustments = (p.adjustments || []).filter(function (x) { return !x.done; });
+      talkChanged(p);
+    }
+  });
+  $('#talkBox').addEventListener('change', function (e) {
+    var cb = e.target.closest('[data-adj]');
+    if (!cb) return;
+    var p = editingId ? byId(state.projects, editingId) : null;
+    if (!p) return;
+    var adj = (p.adjustments || []).filter(function (x) { return x.id === cb.dataset.adj; })[0];
+    if (!adj) return;
+    adj.done = cb.checked;
+    adj.doneBy = cb.checked ? (currentUser() || '') : '';
+    adj.doneAt = cb.checked ? nowISO() : '';
+    var msg = '';
+    if (cb.checked && !pendingAdj(p) && !isConfStatus(p.statusId) && confStatusId()) {
+      changeStatus(p, confStatusId());
+      addComment(p, 'Concluiu todos os ajustes. Voltou para ' + byId(state.statuses, confStatusId()).name + '.', 'sys');
+      syncStatusFields(p);
+      msg = 'Todos os ajustes feitos. Projeto voltou para a conferência.';
+    }
+    talkChanged(p, msg);
+  });
+  $('#talkBox').addEventListener('keydown', function (e) {
+    if (e.target.id === 'talk-text' && e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault(); var sb = $('[data-talk="send"]'); if (sb) sb.click();
+    }
+  });
+
   function openProject(id, preset) {
     preset = preset || {};
     var p = id ? byId(state.projects, id) : null;
@@ -3133,6 +3403,8 @@
     paintRange($('#f-progress-range'));
     fLocation.value = p ? p.location : '';
     fNotes.value = p ? p.notes : '';
+    talkUi.ret = false;
+    if (p) { markSeen(p.id); renderBell(); }
     var firstStatus = state.statuses[0] ? state.statuses[0].id : '';
     var midPriority = state.priorities.length ? state.priorities[Math.floor(state.priorities.length / 2)].id : '';
     discSel = p ? p.typeIds.slice() : []; discOpen = false;
@@ -3149,6 +3421,7 @@
     closePop();
     ui.openFilter = null; renderFilters();
     modalEl.hidden = false;
+    renderTalk();
     autoGrow(fDesc); autoGrow(fNotes);
     modalEl.scrollTop = 0;
     document.body.classList.add('no-scroll');
@@ -3156,7 +3429,10 @@
   }
 
   function closeModal() {
+    var wasId = editingId;
     modalEl.hidden = true;
+    if (wasId) markSeen(wasId);
+    setTimeout(refreshData, 0);
     ui.respOpen = false;
     editingId = null;
     document.body.classList.remove('no-scroll');
@@ -3542,6 +3818,7 @@
      Renderização geral
      ========================================================= */
   function refreshData() {
+    renderBell();
     renderFilters();
     renderTable();
     renderBoard();
