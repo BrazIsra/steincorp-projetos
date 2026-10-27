@@ -911,7 +911,7 @@
       <p style="margin:0 0 12px" id="accountInfo"></p>
       <div id="accountPassBox">
         <div class="field" style="margin-bottom:10px">
-          <label for="acc-pass">Nova senha (mínimo 8 caracteres)</label>
+          <label for="acc-pass">Nova senha (mínimo 4 caracteres)</label>
           <input id="acc-pass" type="password" autocomplete="new-password">
         </div>
         <div class="field">
@@ -1288,11 +1288,13 @@
       return { ok: false, reason: res.status };
     } catch (e) { return { ok: false, reason: 'net' }; }
   }
-  async function setUserPass(token, userId, name, pass) {
+  var FIRST_PASS = '0303';
+  async function setUserPass(token, userId, name, pass, mustChange) {
     var lock = await lockToken(token, pass);
     return updateKeyFile(token, function (b) {
       b.users = b.users || {};
       b.users[userId] = { name: name, lock: lock };
+      if (mustChange) b.users[userId].mustChange = true;
     });
   }
 
@@ -2463,7 +2465,7 @@
     closePop();
     showTab();
     if (!isAdmin()) { settingsEl.innerHTML = ''; return; }
-    settingsEl.innerHTML = githubPanel() + (ghConfigured() && site ? usersPanel() : '') + LISTS.map(listPanel).join('') + colabPanel() + dataPanel();
+    settingsEl.innerHTML = githubPanel() + (ghConfigured() && site ? usersPanel() : '') + LISTS.map(listPanel).join('') + dataPanel();
   }
 
   function usersPanel() {
@@ -2471,27 +2473,28 @@
     var ids = state.collaborators.map(function (c) { return c.id; });
     var rows = state.collaborators.map(function (c) {
       var u = users[c.id];
-      var open = ui.userPass === c.id;
+      var n = state.projects.filter(function (p) { return p.responsibles.indexOf(c.id) >= 0; }).length;
+      var st = !u ? 'Sem acesso' : (u.mustChange ? 'Senha inicial (0303)' : 'Ativo');
       return '<div class="user-row" data-uid="' + esc(c.id) + '">' +
-        '<span class="u-name"><span class="avatar xs" style="background:' + esc(c.color) + '">' + esc(initials(c.name)) + '</span>' + esc(c.name) + (c.id === me ? ' <span class="u-state">(você)</span>' : '') + '</span>' +
-        '<span class="u-state' + (u ? ' ok' : '') + '">' + (u ? 'Tem acesso' : 'Sem acesso') + '</span>' +
+        '<span class="u-name"><button type="button" class="avatar xs" data-action="colab-color" style="background:' + esc(c.color) + ';border:0;cursor:pointer" title="Escolher cor">' + esc(initials(c.name)) + '</button>' + esc(c.name) + (c.id === me ? ' <span class="u-state">(você)</span>' : '') + '</span>' +
+        '<span class="u-state' + (u && !u.mustChange ? ' ok' : '') + '">' + st + ' · ' + n + ' proj.</span>' +
         (u ? '<label class="u-admin"><input type="checkbox" data-uadmin' + (admins.indexOf(c.id) >= 0 ? ' checked' : '') + '> Administrador</label>' : '') +
-        '<button type="button" class="btn sm" data-action="u-pass">' + (u ? 'Trocar senha' : 'Criar acesso') + '</button>' +
-        (u && c.id !== me ? '<button type="button" class="btn btn-danger sm" data-action="u-remove">Remover acesso</button>' : '') +
-        (open ? '<form data-action="u-pass-save"><input class="input" type="password" name="p1" placeholder="Senha inicial (mín. 8)" autocomplete="new-password"><input class="input" type="password" name="p2" placeholder="Repita" autocomplete="new-password"><button type="submit" class="btn btn-primary sm">Salvar</button></form>' : '') +
+        (u ? (c.id !== me ? '<button type="button" class="btn sm" data-action="u-reset">Redefinir senha</button>' : '')
+           : '<button type="button" class="btn sm" data-action="u-grant">Liberar acesso</button>') +
+        (c.id !== me ? '<button type="button" class="btn btn-danger sm" data-action="u-delete">Remover usuário</button>' : '') +
         '</div>';
     }).join('');
     var orphans = Object.keys(users).filter(function (id) { return ids.indexOf(id) < 0; }).map(function (id) {
-      return '<div class="user-row" data-uid="' + esc(id) + '"><span class="u-name">' + esc(users[id].name || 'Usuário removido') + '</span><span class="u-state">não está mais nos colaboradores</span>' +
-        '<button type="button" class="btn btn-danger sm" data-action="u-remove">Remover acesso</button></div>';
+      return '<div class="user-row" data-uid="' + esc(id) + '"><span class="u-name">' + esc(users[id].name || 'Usuário removido') + '</span><span class="u-state">acesso sobrando</span>' +
+        '<button type="button" class="btn btn-danger sm" data-action="u-remove">Apagar acesso</button></div>';
     }).join('');
     var legacy = keyFile && keyFile.lock;
-    var hint = !admins.length
-      ? '<p class="sub"><b>Comece por você:</b> crie seu acesso, marque "Administrador", depois clique no seu nome no topo e em "Sair" para entrar com seu usuário.</p>'
-      : '';
-    return '<div class="panel" data-users><h3>Usuários e senhas</h3>' +
-      '<p class="sub">Cada colaborador entra com o próprio nome e senha. Só administradores veem esta aba de Configurações. Cada pessoa pode trocar a própria senha clicando no seu nome, no topo.</p>' + hint +
-      '<div class="users-tbl">' + (rows || '<div class="items-empty">Cadastre os colaboradores abaixo para criar os acessos.</div>') + orphans + '</div>' +
+    return '<div class="panel" data-users><h3>Usuários</h3>' +
+      '<p class="sub">Os usuários são as pessoas da equipe e aparecem como Responsáveis nos projetos. Um usuário novo, ou com a senha redefinida, entra com a senha <b>0303</b> e escolhe a própria senha no primeiro acesso. Só administradores veem Configurações.</p>' +
+      '<div class="users-tbl">' + (rows || '<div class="items-empty">Nenhum usuário ainda.</div>') + orphans + '</div>' +
+      '<form class="add-row" data-action="u-add" style="margin-top:12px">' +
+      '<input class="input" name="name" placeholder="Nome do novo usuário" maxlength="60" aria-label="Nome do novo usuário">' +
+      '<button type="submit" class="btn btn-primary sm">Adicionar usuário</button></form>' +
       (legacy ? '<div class="gh-status error" style="margin-top:12px">A senha única da empresa ainda funciona. Depois que todos tiverem o próprio acesso, desative-a.' +
         (admins.length ? ' <button type="button" class="btn btn-danger sm" data-action="u-legacy-off" style="margin-left:8px">Desativar senha da empresa</button>' : '') + '</div>' : '') +
       '</div>';
@@ -2503,23 +2506,45 @@
     var btn = e.target.closest('button[data-action]');
     if (!btn) return;
     var action = btn.dataset.action;
-    var li = btn.closest('.item');
+    var li = btn.closest('.item') || btn.closest('.user-row');
     var panel = btn.closest('[data-list]');
     var key = panel ? panel.dataset.list : null;
-    var id = li ? li.dataset.id : null;
+    var id = li ? (li.dataset.id || li.dataset.uid) : null;
 
     var urow = btn.closest('.user-row');
-    if (urow && action === 'u-pass') {
-      ui.userPass = ui.userPass === urow.dataset.uid ? null : urow.dataset.uid;
-      renderSettings();
-      var pi = settingsEl.querySelector('.user-row[data-uid="' + ui.userPass + '"] input[name="p1"]');
-      if (pi) pi.focus();
+    if (urow && (action === 'u-grant' || action === 'u-reset')) {
+      var uidg = urow.dataset.uid, cg = byId(state.collaborators, uidg);
+      var go = function () {
+        btn.disabled = true;
+        setUserPass(gh.cfg.token, uidg, cg ? cg.name : '', FIRST_PASS, true).then(function (r) {
+          toast(r.ok ? (action === 'u-reset' ? 'Senha de ' + cg.name + ' voltou para 0303.' : 'Acesso liberado. ' + cg.name + ' entra com a senha 0303.') : 'Não consegui salvar agora. Tente de novo.');
+          renderSettings();
+        });
+      };
+      if (action === 'u-reset') {
+        confirmBox('Redefinir a senha de ' + (cg ? cg.name : 'usuário') + '?', 'A senha volta a ser 0303 e ele escolhe uma nova no próximo acesso.', 'Redefinir').then(function (ok) { if (ok) go(); });
+      } else go();
+      return;
+    }
+    if (urow && action === 'u-delete') {
+      var uidd = urow.dataset.uid, cd = byId(state.collaborators, uidd);
+      if (!cd) return;
+      var nd = state.projects.filter(function (p) { return p.responsibles.indexOf(uidd) >= 0; }).length;
+      confirmBox('Remover o usuário ' + cd.name + '?', 'Ele perde o acesso ao gestor' + (nd ? ' e sai de responsável em ' + nd + ' projeto(s)' : '') + '. Os projetos continuam.', 'Remover').then(function (ok) {
+        if (!ok) return;
+        state.collaborators = state.collaborators.filter(function (x) { return x.id !== uidd; });
+        purgeRefs(); save(); refreshData();
+        updateKeyFile(gh.cfg.token, function (b) {
+          if (b.users) delete b.users[uidd];
+          if (Array.isArray(b.admins)) b.admins = b.admins.filter(function (x) { return x !== uidd; });
+        }).then(function (r) { toast(r.ok ? 'Usuário removido.' : 'Usuário removido da lista, mas não consegui apagar o acesso agora. Use "Apagar acesso".'); renderSettings(); });
+      });
       return;
     }
     if (urow && action === 'u-remove') {
       var uid0 = urow.dataset.uid;
       var nm = (keyUsers()[uid0] || {}).name || 'este usuário';
-      confirmBox('Remover o acesso de ' + nm + '?', 'A senha dele deixa de funcionar nos próximos acessos. O colaborador continua nos projetos.', 'Remover').then(function (ok) {
+      confirmBox('Apagar o acesso de ' + nm + '?', 'A senha dele deixa de funcionar.', 'Apagar').then(function (ok) {
         if (!ok) return;
         updateKeyFile(gh.cfg.token, function (b) {
           if (b.users) delete b.users[uid0];
@@ -2681,17 +2706,19 @@
   settingsEl.addEventListener('submit', function (e) {
     e.preventDefault();
     var f = e.target;
-    if (f.dataset.action === 'u-pass-save') {
-      var uid2 = f.closest('.user-row').dataset.uid;
-      var p1u = f.querySelector('[name="p1"]').value, p2u = f.querySelector('[name="p2"]').value;
-      var badu = !p1u || p1u.length < 8 ? 'A senha precisa ter pelo menos 8 caracteres.' : (p1u !== p2u ? 'As duas senhas não são iguais.' : null);
-      if (badu) { toast(badu); return; }
-      var col = byId(state.collaborators, uid2);
+    if (f.dataset.action === 'u-add') {
+      var nin = f.querySelector('[name="name"]');
+      var nn = nin.value.trim();
+      if (!nn) { nin.focus(); return; }
+      if (state.collaborators.some(function (c) { return norm(c.name) === norm(nn); })) { toast('Já existe um usuário com esse nome.'); nin.focus(); return; }
+      var nc = { id: uid(), name: nn, role: '', color: nextColor(state.collaborators) };
+      state.collaborators.push(nc);
+      save(); refreshData();
       f.querySelector('button').disabled = true;
-      setUserPass(gh.cfg.token, uid2, col ? col.name : '', p1u).then(function (r) {
-        if (r.ok) { ui.userPass = null; toast('Acesso salvo para ' + (col ? col.name : 'o usuário') + '.'); }
-        else toast('Não consegui salvar agora. Tente de novo.');
+      setUserPass(gh.cfg.token, nc.id, nn, FIRST_PASS, true).then(function (r) {
+        toast(r.ok ? nn + ' adicionado. Primeiro acesso com a senha 0303.' : nn + ' adicionado, mas não consegui liberar o acesso agora. Clique em "Liberar acesso".');
         renderSettings();
+        var again = settingsEl.querySelector('[data-users] form input'); if (again) again.focus();
       });
       return;
     }
@@ -3586,6 +3613,7 @@
     if (who) writeLocal('steincorpProjetos.lastUser.v1', who);
     closeUnlock();
     showTab();
+    if (who && (keyUsers()[who] || {}).mustChange) openAccount(true);
     gh.message = '';
     await ghConnect(false);
     renderSettings();
@@ -3611,21 +3639,28 @@
     b.hidden = false;
   }
   var accountEl = $('#account');
-  function openAccount() {
+  var accountForced = false;
+  function mustChangePass() { var me = currentUser(); return !!(me && (keyUsers()[me] || {}).mustChange); }
+  function openAccount(forced) {
+    accountForced = !!forced;
+    $('#accClose').hidden = accountForced;
+    $('#accLogout').hidden = accountForced;
     var me = currentUser();
     $('#accErr').style.display = 'none';
     $('#acc-pass').value = ''; $('#acc-pass2').value = '';
     $('#accountPassBox').hidden = !me;
     $('#accSave').hidden = !me;
     $('#accountTitle').textContent = me ? ($('#userName').textContent || 'Minha conta') : 'Senha da empresa';
-    $('#accountInfo').textContent = me
+    $('#accountInfo').textContent = accountForced
+      ? 'Bem-vindo! Este é seu primeiro acesso (ou sua senha foi redefinida). Escolha agora a sua senha.'
+      : me
       ? 'Você está conectado com o seu usuário' + (isAdmin() ? ' (administrador)' : '') + '. Aqui você pode trocar sua senha ou sair deste aparelho.'
       : 'Este aparelho entrou com a senha única da empresa. Saia e entre com seu usuário quando ele estiver criado.';
     accountEl.hidden = false;
     document.body.classList.add('no-scroll');
     if (me) setTimeout(function () { $('#acc-pass').focus(); }, 40);
   }
-  function closeAccount() { accountEl.hidden = true; document.body.classList.remove('no-scroll'); }
+  function closeAccount() { if (accountForced) return; accountEl.hidden = true; document.body.classList.remove('no-scroll'); }
   $('#userBtn').addEventListener('click', openAccount);
   $('#accClose').addEventListener('click', closeAccount);
   accountEl.addEventListener('click', function (e) { if (e.target === accountEl) closeAccount(); });
@@ -3642,13 +3677,13 @@
     var me = currentUser();
     if (!me || !ghConfigured()) return;
     var p1 = $('#acc-pass').value, p2 = $('#acc-pass2').value;
-    var err = !p1 || p1.length < 8 ? 'A senha precisa ter pelo menos 8 caracteres.' : (p1 !== p2 ? 'As duas senhas não são iguais.' : null);
+    var err = !p1 || p1.length < 4 ? 'A senha precisa ter pelo menos 4 caracteres.' : (p1 === FIRST_PASS ? 'Escolha uma senha diferente de 0303.' : (p1 !== p2 ? 'As duas senhas não são iguais.' : null));
     if (err) { $('#accErr').textContent = err; $('#accErr').style.display = 'block'; return; }
     var btn = $('#accSave'); btn.disabled = true;
     var name = (keyUsers()[me] || {}).name || $('#userName').textContent;
     var r = await setUserPass(gh.cfg.token, me, name, p1);
     btn.disabled = false;
-    if (r.ok) { closeAccount(); toast('Senha trocada. Use a nova senha nos próximos acessos.'); }
+    if (r.ok) { accountForced = false; closeAccount(); toast('Senha trocada. Use a nova senha nos próximos acessos.'); }
     else { $('#accErr').textContent = 'Não consegui salvar agora. Tente de novo.'; $('#accErr').style.display = 'block'; }
   });
 
@@ -3656,7 +3691,7 @@
   renderAll();
   if (ghConfigured()) {
     ghConnect(true);
-    fetchKeyFile().then(function (k) { keyFile = k; showTab(); if (!settingsEl.contains(document.activeElement)) renderSettings(); });
+    fetchKeyFile().then(function (k) { keyFile = k; showTab(); if (!settingsEl.contains(document.activeElement)) renderSettings(); if (mustChangePass()) openAccount(true); });
   } else {
     setSync('busy', 'Verificando…');
     fetchKeyFile().then(function (k) {
