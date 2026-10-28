@@ -148,6 +148,7 @@
   .nc-det .nc-meta { font-size: 12.5px; color: var(--muted); margin-bottom: 16px; }
   .nc-det .nc-kind { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-bottom: 10px; background: var(--primary-soft); color: var(--primary); }
   .nc-det .nc-kind.ret { background: rgba(229,72,77,.12); color: var(--danger); }
+  .nc-det .nc-kind.conf { background: rgba(77,150,255,.14); color: #2f7de1; }
   .nc-det .nc-text { white-space: pre-wrap; word-break: break-word; font-size: 14px; line-height: 1.5; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); margin-bottom: 16px; }
   .nc .nc-back { display: none; }
   @media (max-width: 760px) {
@@ -163,6 +164,15 @@
   .talk { width: 400px; flex: none; display: flex; flex-direction: column; gap: 10px; padding: 18px; border-left: 1px solid var(--border); position: sticky; top: 0; max-height: calc(100vh - 80px); overflow-y: auto; align-self: stretch; }
   .talk[hidden] { display: none; }
   .talk .msgs { max-height: none; flex: 1; min-height: 140px; }
+  /* ficha do projeto cabe na tela: o meio rola e o rodapé (Salvar) fica sempre visível */
+  @media (min-width: 901px) {
+    #modal { padding: 16px; align-items: center; overflow: hidden; }
+    #projectForm { display: flex; flex-direction: column; max-height: calc(100vh - 32px); }
+    #projectForm > .modal-head, #projectForm > .modal-foot { flex: none; }
+    #projectForm > .modal-split { flex: 1; min-height: 0; align-items: stretch; }
+    #projectForm > .modal-split > .modal-body { overflow-y: auto; align-content: start; }
+    #projectForm .talk { position: static; max-height: none; min-height: 0; }
+  }
   .talk-head { font-size: 15px; font-weight: 700; }
   @media (max-width: 900px) {
     .modal-split { flex-direction: column; align-items: stretch; }
@@ -309,11 +319,17 @@
   .ag-mgrid > .ag-mday:nth-child(-n + 14) { border-top: 0; }
   .ag-mday.out { background: var(--surface-2); }
   .ag-mday.out .ag-mnum { color: var(--muted); opacity: .6; }
-  .ag-mnum { align-self: flex-end; margin: 0 6px 2px; min-width: 26px; height: 26px; padding: 0 6px; display: grid; place-items: center; border-radius: 999px; font-size: 13px; }
+  .ag-mnum { margin: 0 6px 2px; min-width: 26px; height: 26px; padding: 0 6px; display: grid; place-items: center; border-radius: 999px; font-size: 13px; }
   .ag-mday.today .ag-mnum { background: var(--primary); color: #fff; font-weight: 600; }
   .ag-mday .ag-list { gap: 4px; padding: 0 6px 6px; }
   .ag-item.ag-mini { padding: 3px 7px; border-top-width: 3px; border-radius: 6px; }
   .ag-item.ag-mini b { font-size: 12px; -webkit-line-clamp: 1; font-weight: 600; }
+  .ag-hol { display: block; margin: 4px auto 0; max-width: 100%; padding: 1px 7px; border-radius: 999px; background: rgba(229,72,77,.12); color: var(--danger); font-size: 10.5px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: fit-content; }
+  .ag-day.hol:not(.today) .ag-num, .ag-day.hol:not(.today) .ag-mnum { color: var(--danger); }
+  .ag-day.hol { background: rgba(229,72,77,.035); }
+  .ag-mtop { display: flex; align-items: center; justify-content: flex-end; gap: 4px; min-width: 0; padding-left: 6px; }
+  .ag-mtop .ag-hol { margin: 0 auto 2px 0; }
+  .ag-mtop .ag-mnum { flex: none; }
   .ag-more { border: 0; background: none; padding: 2px 4px; text-align: left; font: inherit; font-size: 12px; font-weight: 600; color: var(--primary); cursor: pointer; border-radius: 6px; }
   .ag-more:hover { background: var(--hover); }
   @media (max-width: 760px) {
@@ -324,6 +340,7 @@
     .ag-mgrid > .ag-mday:nth-child(-n + 14) { border-top: 0; }
     .ag-mgrid .ag-mday .ag-list { flex: 1; }
     .ag-mnum { font-size: 12px; min-width: 22px; height: 22px; margin: 0 3px 2px; }
+    .ag-mtop .ag-hol { display: none; }
     .ag-mday .ag-list { padding: 0 3px 4px; }
     .ag-item.ag-mini { padding: 2px 4px; }
     .ag-item.ag-mini b { font-size: 10.5px; }
@@ -1135,7 +1152,11 @@
         <span class="label">Responsáveis</span>
         <div class="multi" id="f-resp"></div>
       </div>
-      <div class="field full">
+      <div class="field">
+        <label for="f-checker">Conferente</label>
+        <select id="f-checker"></select>
+      </div>
+      <div class="field full" style="display:none"><!-- Observações saiu: o texto antigo foi juntado à descrição -->
         <label for="f-notes">Observações</label>
         <textarea id="f-notes" rows="3"></textarea>
       </div>
@@ -1350,6 +1371,12 @@
     };
   }
 
+  /* O campo Observações saiu: o que estava nele passa para o fim da descrição */
+  function mergeNotes(desc, notes) {
+    desc = String(desc || '').trim(); notes = String(notes || '').trim();
+    if (!notes) return desc;
+    return desc ? desc + '\n' + notes : notes;
+  }
   function normalize(d) {
     var def = defaults();
     if (!d || typeof d !== 'object') return def;
@@ -1369,11 +1396,12 @@
     });
     out.projects = out.projects.filter(function (p) { return p && p.id; }).map(function (p) {
       return {
-        id: String(p.id), name: fmtName(String(p.name || 'Sem nome')), desc: String(p.desc || ''),
+        id: String(p.id), name: fmtName(String(p.name || 'Sem nome')), desc: mergeNotes(p.desc, p.notes),
         typeIds: Array.isArray(p.typeIds) ? p.typeIds.filter(Boolean) : (p.typeId ? [p.typeId] : []), client: String(p.client || ''), statusId: p.statusId || '',
         priorityId: p.priorityId || '', deadline: String(p.deadline || ''), location: String(p.location || ''),
         responsibles: Array.isArray(p.responsibles) ? p.responsibles.slice() : [],
-        notes: String(p.notes || ''),
+        checker: typeof p.checker === 'string' ? p.checker : '',
+        notes: '',
         progress: normProgress(p.progress, p.statusId, out.statuses),
         createdAt: /^\d{4}-\d{2}-\d{2}$/.test(p.createdAt || '') ? p.createdAt : '',
         completedAt: /^\d{4}-\d{2}-\d{2}$/.test(p.completedAt || '') ? p.completedAt : '',
@@ -1381,6 +1409,7 @@
           var o = { id: String(c.id || ''), by: String(c.by || ''), at: String(c.at || ''), text: String(c.text), kind: c.kind ? String(c.kind) : '' };
           if (c.f) o.f = String(c.f);
           if (Array.isArray(c.notify) && c.notify.length) o.notify = c.notify.map(String);
+          if (c.ev) o.ev = String(c.ev);
           if (c.from !== undefined) o.from = String(c.from);
           return o;
         }),
@@ -1864,6 +1893,7 @@
     var colabIds = state.collaborators.map(function (c) { return c.id; });
     state.projects.forEach(function (p) {
       p.responsibles = p.responsibles.filter(function (id) { return colabIds.indexOf(id) >= 0; });
+      if (p.checker && colabIds.indexOf(p.checker) < 0) p.checker = '';
       p.typeIds = p.typeIds.filter(function (id) { return byId(state.types, id); });
     });
   }
@@ -2487,6 +2517,28 @@
     var b = new Date(t); b.setDate(b.getDate() - b.getDay());
     return isoDay(a) === isoDay(b);
   }
+  /* Feriados obrigatórios: nacionais + municipal de Lages-SC (a Sexta-feira Santa é calculada pela Páscoa) */
+  var holCache = {};
+  function easter(y) {
+    var a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+    var h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+    var mon = Math.floor((h + l - 7 * m + 114) / 31), day = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(y, mon - 1, day);
+  }
+  function holidays(y) {
+    if (holCache[y]) return holCache[y];
+    var o = {};
+    function fx(md, n) { o[y + '-' + md] = n; }
+    function rel(base, days, n) { var d = new Date(base); d.setDate(d.getDate() + days); o[isoDay(d)] = n; }
+    fx('01-01', 'Confraternização Universal'); fx('04-21', 'Tiradentes'); fx('05-01', 'Dia do Trabalho');
+    fx('09-07', 'Independência'); fx('10-12', 'Nossa Senhora Aparecida'); fx('11-02', 'Finados');
+    fx('11-15', 'Proclamação da República'); fx('11-20', 'Consciência Negra'); fx('12-25', 'Natal');
+    fx('08-15', 'N. Sra. dos Prazeres (Lages)'); /* feriado municipal de Lages-SC */
+    var pa = easter(y);
+    rel(pa, -2, 'Sexta-feira Santa'); rel(pa, 60, 'Corpus Christi'); /* Corpus Christi é feriado em Lages; Carnaval é facultativo e fica de fora */
+    return (holCache[y] = o);
+  }
+  function holidayOn(iso) { return holidays(+iso.slice(0, 4))[iso] || ''; }
   function agItemsOn(iso) {
     return state.projects.filter(function (p) { return p.deadline === iso && agMineOk(p) && passAllFilters(p); })
       .sort(function (a, b) { return (isDone(a) ? 1 : 0) - (isDone(b) ? 1 : 0) || collator.compare(a.name, b.name); });
@@ -2527,8 +2579,9 @@
         var out = d.getMonth() !== first.getMonth();
         if (!out) shown += items.length;
         var MAXV = 3, more = items.length - MAXV;
-        cells += '<div class="ag-day ag-mday' + (iso === todayIso ? ' today' : '') + (out ? ' out' : '') + '" data-day="' + iso + '">' +
-          '<div class="ag-mnum">' + d.getDate() + '</div>' +
+        var hol = holidayOn(iso);
+        cells += '<div class="ag-day ag-mday' + (iso === todayIso ? ' today' : '') + (out ? ' out' : '') + (hol ? ' hol' : '') + '" data-day="' + iso + '">' +
+          '<div class="ag-mtop">' + (hol ? '<span class="ag-hol" title="Feriado: ' + esc(hol) + '">' + esc(hol) + '</span>' : '') + '<span class="ag-mnum">' + d.getDate() + '</span></div>' +
           '<div class="ag-list">' + items.slice(0, more > 0 ? MAXV - 1 : MAXV).map(function (p) { return agMiniHTML(p); }).join('') +
           (more > 0 ? '<button type="button" class="ag-more" data-ag-week="' + iso + '">+' + (more + 1) + ' mais</button>' : '') + '</div></div>';
       }
@@ -2543,8 +2596,10 @@
       grid = '<div class="ag-grid' + agAnimCls() + '">' + days.map(function (d, i) {
         var iso = isoDay(d), items = agItemsOn(iso);
         shown += items.length;
-        return '<div class="ag-day' + (iso === todayIso ? ' today' : '') + '" data-day="' + iso + '">' +
-          '<div class="ag-head"><div class="ag-dow">' + DOW[i] + '</div><div class="ag-num">' + d.getDate() + '</div></div>' +
+        var hol = holidayOn(iso);
+        return '<div class="ag-day' + (iso === todayIso ? ' today' : '') + (hol ? ' hol' : '') + '" data-day="' + iso + '">' +
+          '<div class="ag-head"><div class="ag-dow">' + DOW[i] + '</div><div class="ag-num">' + d.getDate() + '</div>' +
+          (hol ? '<div class="ag-hol" title="Feriado: ' + esc(hol) + '">' + esc(hol) + '</div>' : '') + '</div>' +
           '<div class="ag-list">' + items.map(function (p) { return agItemHTML(p); }).join('') + '</div></div>';
       }).join('') + '</div>';
     }
@@ -2651,7 +2706,8 @@
       p.deadline = target;
       save(); refreshData();
       var parts = target.split('-');
-      toast(target ? 'Prazo de ' + p.name + ' mudou para ' + parts[2] + '/' + parts[1] + '/' + parts[0] + '.' : 'Prazo de ' + p.name + ' removido.');
+      var hd = target ? holidayOn(target) : '';
+      toast(target ? 'Prazo de ' + p.name + ' mudou para ' + parts[2] + '/' + parts[1] + '/' + parts[0] + '.' + (hd ? ' Atenção: é feriado (' + hd + ').' : '') : 'Prazo de ' + p.name + ' removido.');
     } else {
       d.ghost.remove();
       d.el.classList.remove('ag-src');
@@ -3783,7 +3839,7 @@
   }
   function snapOf(p) {
     return { name: p.name, statusId: p.statusId, priorityId: p.priorityId, deadline: p.deadline, progress: p.progress,
-      responsibles: p.responsibles.slice(), typeIds: p.typeIds.slice(), desc: p.desc, notes: p.notes, client: p.client, location: p.location };
+      responsibles: p.responsibles.slice(), typeIds: p.typeIds.slice(), desc: p.desc, notes: p.notes, client: p.client, location: p.location, checker: p.checker || '' };
   }
   function takeSnap() {
     snap = {}; fullSnap = {};
@@ -3816,7 +3872,13 @@
     var changed = false;
     state.projects.forEach(function (p) {
       var o = snap[p.id];
-      if (!o) { pushLog(p, restoredIds[p.id] ? 'Restaurou o projeto (estava excluído).' : 'Criou o projeto.'); changed = true; return; }
+      if (!o) {
+        pushLog(p, restoredIds[p.id] ? 'Restaurou o projeto (estava excluído).' : 'Criou o projeto.'); changed = true;
+        if (!restoredIds[p.id] && p.checker && isConfStatus(p.statusId) && p.checker !== currentUser()) {
+          p.comments.push({ id: uid(), by: currentUser() || '', at: nowISO(), text: 'Enviou o projeto para ' + whoName(p.checker) + ' conferir.', kind: 'sys', ev: 'conf', notify: [p.checker] });
+        }
+        return;
+      }
       var stChanged = o.statusId !== p.statusId;
       if (stChanged && !skipStatusLog[p.id]) {
         pushLog(p, 'Mudou o status de ' + nameIn(state.statuses, o.statusId, 'Sem status') + ' para ' + nameIn(state.statuses, p.statusId, 'Sem status') + '.'); changed = true;
@@ -3839,6 +3901,15 @@
         pushLog(p, ts.length ? 'Mudou as disciplinas para ' + ts.join(', ') + '.' : 'Tirou todas as disciplinas.'); changed = true;
       }
       if (o.name !== p.name) { pushLog(p, 'Renomeou de "' + o.name + '" para "' + p.name + '".'); changed = true; }
+      if ((o.checker || '') !== (p.checker || '')) {
+        pushLog(p, p.checker ? 'Definiu ' + whoName(p.checker) + ' como conferente.' : 'Tirou o conferente (era ' + whoName(o.checker) + ').'); changed = true;
+      }
+      /* entrou em conferência: avisa quem confere */
+      if (stChanged && p.checker && isConfStatus(p.statusId) && !isConfStatus(o.statusId) && p.checker !== currentUser()) {
+        p.comments = p.comments || [];
+        p.comments.push({ id: uid(), by: currentUser() || '', at: nowISO(), text: 'Enviou o projeto para ' + whoName(p.checker) + ' conferir.', kind: 'sys', ev: 'conf', notify: [p.checker] });
+        changed = true;
+      }
       var edits = [];
       if (o.desc !== p.desc) edits.push('a descrição');
       if (o.notes !== p.notes) edits.push('as observações');
@@ -3958,6 +4029,7 @@
     return last.at > ref;
   }
   function notifText(m) {
+    if (m.ev === 'conf') return whoName(m.by) + ' enviou para você conferir';
     if (m.kind === 'sys') return whoName(m.by) + ' devolveu com ajustes';
     return whoName(m.by) + ' mencionou você: ' + m.text;
   }
@@ -4033,7 +4105,7 @@
     var cur = nc.sel ? all.filter(function (x) { return x.m.id === nc.sel; })[0] : null;
     $('#ncBox').classList.toggle('det-open', !!cur);
     $('#ncDetail').innerHTML = cur ?
-      '<div class="nc-det"><span class="nc-kind' + (cur.m.kind === 'sys' ? ' ret' : '') + '">' + (cur.m.kind === 'sys' ? 'Devolvido com ajustes' : 'Menção') + '</span>' +
+      '<div class="nc-det"><span class="nc-kind' + (cur.m.ev === 'conf' ? ' conf' : (cur.m.kind === 'sys' ? ' ret' : '')) + '">' + (cur.m.ev === 'conf' ? 'Para conferir' : (cur.m.kind === 'sys' ? 'Devolvido com ajustes' : 'Menção')) + '</span>' +
       '<h3>' + esc(cur.p.name) + '</h3><div class="nc-meta">' + esc(whoName(cur.m.by)) + ' · ' + fmtWhen(cur.m.at) + '</div>' +
       '<div class="nc-text">' + msgTextHTML(cur.m.text) + '</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn btn-primary" data-nc-open="' + esc(cur.p.id) + '">Abrir projeto</button>' +
@@ -4283,6 +4355,7 @@
     var startStatus = fStatus.value;
     fillSelect(fPriority, state.priorities, p ? p.priorityId : (clearsPriority(startStatus) ? noPriorityId() : midPriority), 'Sem prioridade');
     respSel = p ? p.responsibles.filter(function (rid) { return byId(state.collaborators, rid); }) : [];
+    fillSelect($('#f-checker'), state.collaborators, p ? p.checker : '', 'Ninguém definido');
     ui.respOpen = false;
     renderResp();
     nameField.classList.remove('invalid');
@@ -4331,6 +4404,7 @@
       deadline: fDeadline.value,
       location: fLocation.value.trim(),
       responsibles: respSel.slice(),
+      checker: $('#f-checker').value,
       notes: fNotes.value.trim(),
       progress: Math.max(0, Math.min(100, Math.round(Number($('#f-progress').value) || 0)))
     };
@@ -4827,9 +4901,10 @@
   });
 
   /* ---------- Versão ---------- */
-  var APP_VERSION = '2.10.0';
+  var APP_VERSION = '2.11.0';
   /* Histórico de versões: acrescentar a nova versão no topo a cada lançamento */
   var CHANGELOG = [
+    { v: '2.11.0', d: '28/10/2026', items: ['Conferente no projeto: escolha quem confere; ele é avisado no sininho quando o projeto entra em conferência.', 'Feriados obrigatórios (nacionais e de Lages-SC) marcados na agenda, com aviso ao arrastar um prazo para um feriado.', 'Ficha do projeto cabe na tela: o botão Salvar fica sempre visível.', 'Campo Observações removido: o texto que havia nele foi juntado ao fim da descrição.'] },
     { v: '2.10.0', d: '28/10/2026', items: ['Lista de versões e atualizações: clique na versão no rodapé (só administradores).'] },
     { v: '2.9.1', d: '28/10/2026', items: ['Transição suave na troca de abas, nas setas da agenda e nas estatísticas.'] },
     { v: '2.9.0', d: '28/10/2026', items: ['Agenda com visão do mês inteiro (botão Mês/Semana), com transição.', 'Arrastar projeto para outro dia também na visão do mês.', '"+N mais" quando o dia tem muitos projetos abre a semana daquele dia.'] },
