@@ -113,8 +113,49 @@
   .bell-head button { border: 0; background: none; color: var(--primary); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
   .bell-item { display: block; width: 100%; text-align: left; padding: 10px 14px; border: 0; border-bottom: 1px solid var(--border); background: transparent; color: inherit; font: inherit; cursor: pointer; }
   .bell-item:hover { background: var(--hover); }
+  .bell-item.unread { background: var(--primary-soft); position: relative; padding-left: 26px; }
+  .bell-item.unread::before { content: ''; position: absolute; left: 11px; top: 15px; width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
+  .bell-item:not(.unread) b { font-weight: 600; color: var(--muted); }
   .bell-item b { display: block; font-size: 13px; }
   .bell-item span { display: block; font-size: 12.5px; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bell-more { display: block; width: 100%; padding: 11px 14px; border: 0; background: var(--surface-2); color: var(--primary); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; border-radius: 0 0 12px 12px; }
+  .bell-more:hover { background: var(--hover); }
+  .modal.nc { max-width: 1000px; display: flex; flex-direction: column; height: min(720px, calc(100vh - 80px)); overflow: hidden; }
+  .nc-head-r { display: flex; align-items: center; gap: 8px; }
+  .nc-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 400px 1fr; }
+  .nc-left { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--border); background: var(--surface-2); }
+  .nc-tools { display: flex; gap: 8px; align-items: center; padding: 12px; border-bottom: 1px solid var(--border); }
+  .nc-tools input { flex: 1; }
+  .nc-tools select { width: auto; }
+  .nc-list { flex: 1; overflow-y: auto; }
+  .nc-item { display: block; width: 100%; text-align: left; padding: 10px 14px 10px 26px; border: 0; border-bottom: 1px solid var(--border); background: var(--surface); color: inherit; font: inherit; cursor: pointer; position: relative; }
+  .nc-item:hover { background: var(--hover); }
+  .nc-item.sel { box-shadow: inset 3px 0 0 var(--primary); background: var(--primary-soft); }
+  .nc-item.unread::before { content: ''; position: absolute; left: 11px; top: 15px; width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
+  .nc-item b { display: block; font-size: 13px; }
+  .nc-item:not(.unread) b { font-weight: 600; color: var(--muted); }
+  .nc-item .nc-sub { display: flex; justify-content: space-between; gap: 8px; margin-top: 2px; font-size: 12px; color: var(--muted); }
+  .nc-item .nc-sub span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nc-item .nc-sub span:last-child { flex: none; }
+  .nc-pager { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--muted); }
+  .nc-pager .pg { display: flex; gap: 4px; }
+  .nc-pager .pg button { min-width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); color: inherit; font: inherit; cursor: pointer; }
+  .nc-pager .pg button.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .nc-pager .pg button:disabled { opacity: .4; cursor: default; }
+  .nc-right { padding: 22px 24px; overflow-y: auto; }
+  .nc-none { height: 100%; display: grid; place-items: center; color: var(--muted); font-weight: 600; }
+  .nc-det h3 { margin: 0 0 4px; font-size: 18px; }
+  .nc-det .nc-meta { font-size: 12.5px; color: var(--muted); margin-bottom: 16px; }
+  .nc-det .nc-kind { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-bottom: 10px; background: var(--primary-soft); color: var(--primary); }
+  .nc-det .nc-kind.ret { background: rgba(229,72,77,.12); color: var(--danger); }
+  .nc-det .nc-text { white-space: pre-wrap; word-break: break-word; font-size: 14px; line-height: 1.5; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); margin-bottom: 16px; }
+  .nc .nc-back { display: none; }
+  @media (max-width: 760px) {
+    .nc .nc-back { display: inline-flex; }
+    .nc-body { grid-template-columns: 1fr; }
+    .nc.det-open .nc-left { display: none; }
+    .nc:not(.det-open) .nc-right { display: none; }
+  }
   .bell-empty { padding: 18px 14px; text-align: center; color: var(--muted); font-size: 13px; }
   .modal.wide { max-width: 1120px; }
   .modal-split { display: flex; align-items: flex-start; }
@@ -150,7 +191,12 @@
   .msg-h { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-bottom: 3px; }
   .msg-h b { color: var(--text); }
   .msg-t { white-space: pre-wrap; word-break: break-word; font-size: 13.5px; }
-  .msg-new { display: flex; gap: 8px; align-items: flex-end; }
+  .msg-new { display: flex; gap: 8px; align-items: flex-end; position: relative; }
+  .mention { color: var(--primary); font-weight: 600; }
+  .mention.me { background: var(--primary-soft); border-radius: 4px; padding: 0 3px; }
+  .mention-pop { position: absolute; left: 0; bottom: calc(100% + 6px); z-index: 70; min-width: 200px; max-height: 220px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-lg); padding: 4px; }
+  .mention-pop button { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 7px 10px; border: 0; border-radius: 7px; background: transparent; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
+  .mention-pop button.on, .mention-pop button:hover { background: var(--hover); }
   .msg-new textarea { flex: 1; min-height: 40px; }
   .log-line { font-size: 12.5px; color: var(--muted); padding: 2px 4px; line-height: 1.4; }
   .log-line b { color: var(--text); font-weight: 600; }
@@ -242,6 +288,46 @@
   .ag-nav { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 14px; }
   .ag-nav .ag-range { min-width: 210px; text-align: center; font-weight: 600; font-size: 15px; }
   .ag-today { margin-left: 6px; }
+  .ag-nav { position: relative; min-height: 38px; }
+  .ag-view { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
+  .ag-view svg { width: 16px; height: 16px; }
+  @media (max-width: 900px) { .ag-view { position: static; transform: none; margin-left: 4px; } }
+  @keyframes agIn { from { opacity: 0; transform: scale(.985) translateY(6px); } to { opacity: 1; transform: none; } }
+  .ag-anim { animation: agIn .28s ease; transform-origin: 50% 0; }
+  /* mesma transição em outras trocas de tela */
+  .view-anim { animation: agIn .28s ease; transform-origin: 50% 0; }
+  @keyframes agSlideL { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+  @keyframes agSlideR { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+  .ag-slide-l { animation: agSlideL .22s ease; }
+  .ag-slide-r { animation: agSlideR .22s ease; }
+  @media (prefers-reduced-motion: reduce) { .ag-anim, .view-anim, .ag-slide-l, .ag-slide-r { animation: none; } }
+  .ag-mgrid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: auto repeat(var(--weeks), minmax(118px, 1fr)); border: 1px solid var(--border); border-radius: 14px; background: var(--surface); overflow: hidden; min-height: calc(100vh - var(--header-h) - 150px); }
+  .ag-mdow { text-align: center; padding: 10px 4px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--border); border-left: 1px solid var(--border); }
+  .ag-mdow:first-child { border-left: 0; }
+  .ag-mday { border-left: 1px solid var(--border); border-top: 1px solid var(--border); display: flex; flex-direction: column; min-width: 0; padding: 4px 0 0; }
+  .ag-mday:nth-child(7n + 1) { border-left: 0; }
+  .ag-mgrid > .ag-mday:nth-child(-n + 14) { border-top: 0; }
+  .ag-mday.out { background: var(--surface-2); }
+  .ag-mday.out .ag-mnum { color: var(--muted); opacity: .6; }
+  .ag-mnum { align-self: flex-end; margin: 0 6px 2px; min-width: 26px; height: 26px; padding: 0 6px; display: grid; place-items: center; border-radius: 999px; font-size: 13px; }
+  .ag-mday.today .ag-mnum { background: var(--primary); color: #fff; font-weight: 600; }
+  .ag-mday .ag-list { gap: 4px; padding: 0 6px 6px; }
+  .ag-item.ag-mini { padding: 3px 7px; border-top-width: 3px; border-radius: 6px; }
+  .ag-item.ag-mini b { font-size: 12px; -webkit-line-clamp: 1; font-weight: 600; }
+  .ag-more { border: 0; background: none; padding: 2px 4px; text-align: left; font: inherit; font-size: 12px; font-weight: 600; color: var(--primary); cursor: pointer; border-radius: 6px; }
+  .ag-more:hover { background: var(--hover); }
+  @media (max-width: 760px) {
+    .ag-view span { display: none; }
+    .ag-mgrid { grid-template-rows: auto repeat(var(--weeks), minmax(70px, auto)); min-height: 0; }
+    .ag-mgrid .ag-mday { flex-direction: column; align-items: stretch; border-left: 1px solid var(--border); border-top: 1px solid var(--border); }
+    .ag-mgrid .ag-mday:nth-child(7n + 1) { border-left: 0; }
+    .ag-mgrid > .ag-mday:nth-child(-n + 14) { border-top: 0; }
+    .ag-mgrid .ag-mday .ag-list { flex: 1; }
+    .ag-mnum { font-size: 12px; min-width: 22px; height: 22px; margin: 0 3px 2px; }
+    .ag-mday .ag-list { padding: 0 3px 4px; }
+    .ag-item.ag-mini { padding: 2px 4px; }
+    .ag-item.ag-mini b { font-size: 10.5px; }
+  }
   .ag-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 14px; background: var(--surface); overflow: hidden; min-height: calc(100vh - var(--header-h) - 150px); }
   .ag-day { border-left: 1px solid var(--border); display: flex; flex-direction: column; min-width: 0; }
   .ag-day:first-child { border-left: 0; }
@@ -737,6 +823,20 @@
   .add-row { display: flex; gap: 8px; }
   .add-row .input { flex: 1; min-width: 0; }
   .data-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .au-tools { display: grid; grid-template-columns: 180px 180px 1fr; gap: 8px; margin: 12px 0; }
+  .au-list { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .au-row { display: grid; grid-template-columns: 92px 110px 1fr auto; gap: 10px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px; border-left: 3px solid var(--border); }
+  .au-row:last-child { border-bottom: 0; }
+  .au-row.k-conf { border-left-color: var(--warn); }
+  .au-row.k-cfg { border-left-color: #8b5cf6; }
+  .au-row.k-user { border-left-color: var(--danger); }
+  .au-row.k-proj { border-left-color: var(--primary); }
+  .au-when { color: var(--muted); font-size: 12px; }
+  .au-who { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .au-txt { min-width: 0; word-break: break-word; }
+  .au-tag { font-size: 11.5px; color: var(--muted); }
+  .au-list + .nc-pager { border-top: 0; padding: 10px 0 0; }
+  @media (max-width: 760px) { .au-tools { grid-template-columns: 1fr 1fr; } .au-tools input { grid-column: 1 / -1; } .au-row { grid-template-columns: 1fr auto; } .au-txt { grid-column: 1 / -1; } }
   .items-empty { padding: 14px; text-align: center; font-size: 13px; color: var(--muted); border: 1px dashed var(--border); border-radius: 8px; margin-bottom: 12px; }
 
   /* ---------- Seletor de cor ---------- */
@@ -1082,6 +1182,24 @@
   </form>
 </div>
 
+<!-- Central de notificações -->
+<div id="notifCenter" class="backdrop" hidden>
+  <div class="modal nc" id="ncBox" role="dialog" aria-modal="true" aria-labelledby="ncTitle">
+    <div class="modal-head"><h2 id="ncTitle">Notificações</h2>
+      <div class="nc-head-r"><button type="button" class="btn sm" data-nc="all-seen" id="ncAllSeen">Marcar tudo como visto</button>
+      <button type="button" class="icon-btn" data-nc="close" aria-label="Fechar" title="Fechar">✕</button></div></div>
+    <div class="nc-body">
+      <div class="nc-left">
+        <div class="nc-tools"><input type="search" class="input" id="ncSearch" placeholder="Buscar…" autocomplete="off">
+          <select class="input" id="ncFilter"><option value="all">Todas</option><option value="unread">Não vistas</option></select></div>
+        <div class="nc-list" id="ncList"></div>
+        <div class="nc-pager" id="ncPager"></div>
+      </div>
+      <div class="nc-right" id="ncDetail"></div>
+    </div>
+  </div>
+</div>
+
 <!-- Confirmação -->
 <div id="confirm" class="backdrop" hidden>
   <div class="modal confirm-box" role="alertdialog" aria-modal="true">
@@ -1242,6 +1360,7 @@
         comments: (Array.isArray(p.comments) ? p.comments : []).filter(function (c) { return c && c.text; }).map(function (c) {
           var o = { id: String(c.id || ''), by: String(c.by || ''), at: String(c.at || ''), text: String(c.text), kind: c.kind ? String(c.kind) : '' };
           if (c.f) o.f = String(c.f);
+          if (Array.isArray(c.notify) && c.notify.length) o.notify = c.notify.map(String);
           if (c.from !== undefined) o.from = String(c.from);
           return o;
         }),
@@ -1268,6 +1387,16 @@
     if (['projects', 'board', 'stats', 'settings'].indexOf(out.tab) < 0) out.tab = 'projects';
     out.statsScope = out.statsScope === 'all' ? 'all' : 'open';
     if (typeof out.title !== 'string' || !out.title.trim()) out.title = DEFAULT_TITLE;
+    out.audit = pruneAudit((Array.isArray(d.audit) ? d.audit : []).filter(function (a) { return a && a.id && a.at && a.txt; }).map(function (a) {
+      var o = { id: String(a.id), at: String(a.at), by: String(a.by || ''), k: String(a.k || 'proj'), txt: String(a.txt) };
+      if (a.pid) o.pid = String(a.pid);
+      if (a.pname) o.pname = String(a.pname);
+      if (a.f) o.f = String(a.f);
+      if (a.from !== undefined) o.from = String(a.from);
+      if (a.snap && typeof a.snap === 'object') o.snap = a.snap;
+      if (a.restored) o.restored = true;
+      return o;
+    }));
     if (out.theme !== 'dark' && out.theme !== 'light') out.theme = null;
     return out;
   }
@@ -1279,7 +1408,7 @@
   }
 
   /* Dados que vão para o GitHub (iguais em todo aparelho) e preferências deste aparelho */
-  var SHARED_KEYS = ['version', 'title', 'priorities', 'statuses', 'types', 'collaborators', 'projects', 'sort'];
+  var SHARED_KEYS = ['version', 'title', 'priorities', 'statuses', 'types', 'collaborators', 'projects', 'sort', 'audit'];
   var LOCAL_KEYS = ['theme', 'tab', 'filters', 'statsScope', 'collapsed'];
   /* O mesmo arquivo roda no site oficial e no de teste: cada um usa nomes e dados próprios */
   var SITE_DIR = (location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase();
@@ -1406,7 +1535,13 @@
   function keyUsers() { return (keyFile && keyFile.users) || {}; }
   function hasUsers() { return Object.keys(keyUsers()).length > 0; }
   function keyAdmins() { return (keyFile && Array.isArray(keyFile.admins)) ? keyFile.admins : []; }
-  function currentUser() { return gh.cfg && gh.cfg.user ? gh.cfg.user : null; }
+  /* No TESTE sem usuários cadastrados, entra como o Israel (cb-1) para dar para ver sininho, conversas etc. */
+  var TEST_USER = 'cb-1';
+  function currentUser() {
+    if (gh.cfg && gh.cfg.user) return gh.cfg.user;
+    if (!IS_PROD && gh.cfg && !hasUsers()) return TEST_USER;
+    return null;
+  }
   function isAdmin() {
     if (!keyFile) return true;
     var admins = keyAdmins();
@@ -1815,6 +1950,8 @@
     applyTheme();
   });
 
+  var lastTabShown = null;
+  function replayAnim(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
   function showTab() {
     var adm = isAdmin();
     var setTab = $('.tab[data-tab="settings"]');
@@ -1830,7 +1967,12 @@
       b.classList.toggle('active', on);
       b.setAttribute('aria-selected', on ? 'true' : 'false');
     });
-    $$('.view').forEach(function (v) { v.hidden = v.id !== 'view-' + state.tab; });
+    $$('.view').forEach(function (v) {
+      var show = v.id === 'view-' + state.tab;
+      if (show && v.hidden && lastTabShown) replayAnim(v, 'view-anim');
+      v.hidden = !show;
+    });
+    lastTabShown = state.tab;
     /* o mesmo filtro aparece na Agenda */
     var slot = state.tab === 'board' ? $('#agFilterSlot') : $('#resultCount');
     if (state.tab === 'board') { if (filtersEl.parentNode !== slot) slot.appendChild(filtersEl); }
@@ -2308,7 +2450,29 @@
 
   /* ---------- Agenda semanal (no lugar do Board) ---------- */
   var agendaEl = $('#agenda');
-  var agendaWeek = 0;
+  /* data de referência da agenda (semana ou mês que está aparecendo) */
+  var agAnchor = new Date(); agAnchor.setHours(0, 0, 0, 0);
+  var agView = readLocal(KP + 'agView.v1') === 'month' ? 'month' : 'week';
+  var agAnim = false;
+  var MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+  function agShift(step) {
+    if (step === 0) { agAnchor = new Date(); agAnchor.setHours(0, 0, 0, 0); return; }
+    if (agView === 'month') { agAnchor = new Date(agAnchor.getFullYear(), agAnchor.getMonth() + step, 1); }
+    else { agAnchor = new Date(agAnchor); agAnchor.setDate(agAnchor.getDate() + step * 7); }
+  }
+  function agIsCurrent() {
+    var t = new Date(); t.setHours(0, 0, 0, 0);
+    if (agView === 'month') return t.getFullYear() === agAnchor.getFullYear() && t.getMonth() === agAnchor.getMonth();
+    var a = new Date(agAnchor); a.setDate(a.getDate() - a.getDay());
+    var b = new Date(t); b.setDate(b.getDate() - b.getDay());
+    return isoDay(a) === isoDay(b);
+  }
+  function agItemsOn(iso) {
+    return state.projects.filter(function (p) { return p.deadline === iso && agMineOk(p) && passAllFilters(p); })
+      .sort(function (a, b) { return (isDone(a) ? 1 : 0) - (isDone(b) ? 1 : 0) || collator.compare(a.name, b.name); });
+  }
+  var ICON_WEEK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18M8 2.5v3M16 2.5v3M9 9v12M15 9v12"/></svg>';
+  var ICON_MONTH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18M8 2.5v3M16 2.5v3"/><path d="M7.5 13h.01M12 13h.01M16.5 13h.01M7.5 17h.01M12 17h.01M16.5 17h.01" stroke-width="2.6"/></svg>';
   var DOW = ['dom.', 'seg.', 'ter.', 'qua.', 'qui.', 'sex.', 'sáb.'];
   var MES = ['jan.', 'fev.', 'mar.', 'abr.', 'mai.', 'jun.', 'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.'];
   function isoDay(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
@@ -2328,31 +2492,56 @@
   }
   function renderBoard() {
     var today = new Date(); today.setHours(0, 0, 0, 0);
-    var start = new Date(today); start.setDate(today.getDate() - today.getDay() + agendaWeek * 7);
-    var days = [];
-    for (var i = 0; i < 7; i++) { var d = new Date(start); d.setDate(start.getDate() + i); days.push(d); }
-    var end = days[6];
-    var range = MES[start.getMonth()] + ' ' + start.getDate() + ' - ' + MES[end.getMonth()] + ' ' + end.getDate() + ', ' + end.getFullYear();
     var todayIso = isoDay(today);
-    var shown = 0;
-    var cols = days.map(function (d, i) {
-      var iso = isoDay(d);
-      var items = state.projects.filter(function (p) { return p.deadline === iso && agMineOk(p) && passAllFilters(p); })
-        .sort(function (a, b) { return (isDone(a) ? 1 : 0) - (isDone(b) ? 1 : 0) || collator.compare(a.name, b.name); });
-      shown += items.length;
-      return '<div class="ag-day' + (iso === todayIso ? ' today' : '') + '" data-day="' + iso + '">' +
-        '<div class="ag-head"><div class="ag-dow">' + DOW[i] + '</div><div class="ag-num">' + d.getDate() + '</div></div>' +
-        '<div class="ag-list">' + items.map(function (p) { return agItemHTML(p); }).join('') + '</div></div>';
-    }).join('');
-    var me = currentUser();
+    var shown = 0, range, grid;
+    if (agView === 'month') {
+      var first = new Date(agAnchor.getFullYear(), agAnchor.getMonth(), 1);
+      var start = new Date(first); start.setDate(1 - first.getDay());
+      var last = new Date(first.getFullYear(), first.getMonth() + 1, 0);
+      var weeks = Math.ceil((first.getDay() + last.getDate()) / 7);
+      range = MESES[first.getMonth()].charAt(0).toUpperCase() + MESES[first.getMonth()].slice(1) + ' ' + first.getFullYear();
+      var cells = '';
+      for (var i = 0; i < weeks * 7; i++) {
+        var d = new Date(start); d.setDate(start.getDate() + i);
+        var iso = isoDay(d), items = agItemsOn(iso);
+        var out = d.getMonth() !== first.getMonth();
+        if (!out) shown += items.length;
+        var MAXV = 3, more = items.length - MAXV;
+        cells += '<div class="ag-day ag-mday' + (iso === todayIso ? ' today' : '') + (out ? ' out' : '') + '" data-day="' + iso + '">' +
+          '<div class="ag-mnum">' + d.getDate() + '</div>' +
+          '<div class="ag-list">' + items.slice(0, more > 0 ? MAXV - 1 : MAXV).map(function (p) { return agMiniHTML(p); }).join('') +
+          (more > 0 ? '<button type="button" class="ag-more" data-ag-week="' + iso + '">+' + (more + 1) + ' mais</button>' : '') + '</div></div>';
+      }
+      grid = '<div class="ag-mgrid' + agAnimCls() + '" style="--weeks:' + weeks + '">' +
+        DOW.map(function (w) { return '<div class="ag-mdow">' + w + '</div>'; }).join('') + cells + '</div>';
+    } else {
+      var ws = new Date(agAnchor); ws.setDate(agAnchor.getDate() - agAnchor.getDay());
+      var days = [];
+      for (var j = 0; j < 7; j++) { var dd = new Date(ws); dd.setDate(ws.getDate() + j); days.push(dd); }
+      var end = days[6];
+      range = MES[ws.getMonth()] + ' ' + ws.getDate() + ' - ' + MES[end.getMonth()] + ' ' + end.getDate() + ', ' + end.getFullYear();
+      grid = '<div class="ag-grid' + agAnimCls() + '">' + days.map(function (d, i) {
+        var iso = isoDay(d), items = agItemsOn(iso);
+        shown += items.length;
+        return '<div class="ag-day' + (iso === todayIso ? ' today' : '') + '" data-day="' + iso + '">' +
+          '<div class="ag-head"><div class="ag-dow">' + DOW[i] + '</div><div class="ag-num">' + d.getDate() + '</div></div>' +
+          '<div class="ag-list">' + items.map(function (p) { return agItemHTML(p); }).join('') + '</div></div>';
+      }).join('') + '</div>';
+    }
+    agAnim = false;
+    var isM = agView === 'month';
     agendaEl.innerHTML = '<div class="ag-nav">' +
-      '<button type="button" class="icon-btn" data-ag="-1" title="Semana anterior" aria-label="Semana anterior">‹</button>' +
+      '<button type="button" class="icon-btn" data-ag="-1" title="' + (isM ? 'Mês anterior' : 'Semana anterior') + '" aria-label="' + (isM ? 'Mês anterior' : 'Semana anterior') + '">‹</button>' +
       '<span class="ag-range">' + range + '</span>' +
-      '<button type="button" class="icon-btn" data-ag="1" title="Próxima semana" aria-label="Próxima semana">›</button>' +
-      (agendaWeek !== 0 ? '<button type="button" class="btn sm ag-today" data-ag="0">Hoje</button>' : '') +
-      '</div>' +
-      '<div class="ag-grid">' + cols + '</div>' +
-      (!shown ? '<div class="ag-foot">Nenhum projeto com prazo nesta semana.</div>' : '');
+      '<button type="button" class="icon-btn" data-ag="1" title="' + (isM ? 'Próximo mês' : 'Próxima semana') + '" aria-label="' + (isM ? 'Próximo mês' : 'Próxima semana') + '">›</button>' +
+      (!agIsCurrent() ? '<button type="button" class="btn sm ag-today" data-ag="0">Hoje</button>' : '') +
+      '<button type="button" class="filter-btn ag-view" data-ag-view title="' + (isM ? 'Ver a semana' : 'Ver o mês inteiro') + '">' + (isM ? ICON_WEEK + '<span>Semana</span>' : ICON_MONTH + '<span>Mês</span>') + '</button>' +
+      '</div>' + grid +
+      (!shown ? '<div class="ag-foot">Nenhum projeto com prazo ' + (isM ? 'neste mês' : 'nesta semana') + '.</div>' : '');
+  }
+  function agAnimCls() { return agAnim === 'l' ? ' ag-slide-l' : (agAnim === 'r' ? ' ag-slide-r' : (agAnim ? ' ag-anim' : '')); }
+  function agMiniHTML(p) {
+    return '<button type="button" class="ag-item ag-mini ' + agDueClass(p) + (isDone(p) ? ' done' : '') + '" data-open="' + esc(p.id) + '" title="' + esc(p.name) + '"><b>' + esc(p.name) + '</b></button>';
   }
   /* Arrastar um projeto para outro dia muda o prazo */
   var agDrag = null, agSuppressClick = false;
@@ -2397,7 +2586,7 @@
         nav.classList.add('ag-hot');
         var step = Number(nav.dataset.ag);
         d.hotTimer = setInterval(function () {
-          agendaWeek += step; renderBoard();
+          agShift(step); renderBoard();
           var src = $$('.ag-item', agendaEl).filter(function (x) { return x.dataset.open === d.id; })[0];
           if (src) { src.classList.add('ag-src'); d.el = src; }
           d.hot = null; d.day = null;
@@ -2458,7 +2647,18 @@
   agendaEl.addEventListener('click', function (e) {
     if (agSuppressClick) { e.preventDefault(); return; }
     var nav = e.target.closest('[data-ag]');
-    if (nav) { var v = Number(nav.dataset.ag); agendaWeek = v === 0 ? 0 : agendaWeek + v; renderBoard(); return; }
+    if (nav) {
+      var stp = Number(nav.dataset.ag);
+      agAnim = stp < 0 ? 'l' : (stp > 0 ? 'r' : true);
+      agShift(stp); renderBoard(); return;
+    }
+    if (e.target.closest('[data-ag-view]')) {
+      agView = agView === 'month' ? 'week' : 'month';
+      writeLocal(KP + 'agView.v1', agView);
+      agAnim = true; renderBoard(); return;
+    }
+    var wk = e.target.closest('[data-ag-week]');
+    if (wk) { var pa = wk.dataset.agWeek.split('-'); agAnchor = new Date(+pa[0], +pa[1] - 1, +pa[2]); agView = 'week'; writeLocal(KP + 'agView.v1', agView); agAnim = true; renderBoard(); return; }
     var it = e.target.closest('[data-open]');
     if (it) openProject(it.dataset.open);
   });
@@ -2770,8 +2970,73 @@
     closePop();
     showTab();
     if (!isAdmin()) { settingsEl.innerHTML = ''; return; }
-    settingsEl.innerHTML = githubPanel() + (ghConfigured() && site ? usersPanel() : '') + LISTS.map(listPanel).join('') + dataPanel();
+    settingsEl.innerHTML = githubPanel() + (ghConfigured() && site ? usersPanel() : '') + LISTS.map(listPanel).join('') + dataPanel() + auditPanel();
+    renderAuditList();
   }
+  var auditUi = { by: '', k: '', q: '', page: 0 };
+  var AUDIT_KINDS = { proj: 'Projetos', conf: 'Conferência', cfg: 'Configurações', user: 'Usuários' };
+  var AUDIT_PER = 15;
+  function auditPanel() {
+    var users = {};
+    (state.audit || []).forEach(function (a) { users[a.by] = 1; });
+    return '<div class="panel" data-audit style="grid-column: 1 / -1"><h3>Histórico de atividades</h3>' +
+      '<p class="sub">Tudo que cada pessoa fez no gestor nos últimos ' + AUDIT_DAYS + ' dias. Só administradores veem. Projeto excluído pode ser restaurado aqui enquanto estiver no histórico.</p>' +
+      '<div class="au-tools"><select class="input" data-au="by"><option value="">Todos os usuários</option>' +
+      Object.keys(users).map(function (id) { return '<option value="' + esc(id) + '"' + (auditUi.by === id ? ' selected' : '') + '>' + esc(whoName(id)) + '</option>'; }).join('') + '</select>' +
+      '<select class="input" data-au="k"><option value="">Todas as ações</option>' +
+      Object.keys(AUDIT_KINDS).map(function (k) { return '<option value="' + k + '"' + (auditUi.k === k ? ' selected' : '') + '>' + AUDIT_KINDS[k] + '</option>'; }).join('') + '</select>' +
+      '<input type="search" class="input" data-au="q" placeholder="Buscar projeto ou texto…" value="' + esc(auditUi.q) + '"></div>' +
+      '<div class="au-list" id="auList"></div><div class="nc-pager" id="auPager"></div></div>';
+  }
+  function renderAuditList() {
+    var el = $('#auList');
+    if (!el) return;
+    var q = norm(auditUi.q.trim());
+    var list = (state.audit || []).slice().reverse().filter(function (a) {
+      if (auditUi.by && a.by !== auditUi.by) return false;
+      if (auditUi.k && a.k !== auditUi.k) return false;
+      return !q || norm((a.pname || '') + ' ' + a.txt + ' ' + whoName(a.by)).indexOf(q) >= 0;
+    });
+    var pages = Math.max(1, Math.ceil(list.length / AUDIT_PER));
+    if (auditUi.page >= pages) auditUi.page = pages - 1;
+    var from = auditUi.page * AUDIT_PER, slice = list.slice(from, from + AUDIT_PER);
+    el.innerHTML = slice.length ? slice.map(function (a) {
+      var canRestore = a.snap && !a.restored && !byId(state.projects, a.pid);
+      return '<div class="au-row k-' + esc(a.k) + '"><span class="au-when">' + fmtWhen(a.at) + '</span>' +
+        '<span class="au-who">' + esc(whoName(a.by)) + '</span>' +
+        '<span class="au-txt">' + (a.pname ? '<b>' + esc(a.pname) + '</b> · ' : '') + esc(a.txt) + '</span>' +
+        (canRestore ? '<button type="button" class="btn sm" data-au-restore="' + esc(a.id) + '">Restaurar</button>' : (a.snap && a.restored ? '<span class="au-tag">restaurado</span>' : '')) +
+        '</div>';
+    }).join('') : '<div class="items-empty">' + ((state.audit || []).length ? 'Nada encontrado com esses filtros.' : 'Nenhuma atividade registrada ainda.') + '</div>';
+    var btns = '', startP = Math.max(0, Math.min(auditUi.page - 2, pages - 5));
+    for (var i = startP; i < Math.min(pages, startP + 5); i++) btns += '<button type="button" data-au-page="' + i + '" class="' + (i === auditUi.page ? 'on' : '') + '">' + (i + 1) + '</button>';
+    $('#auPager').innerHTML = '<span>' + (list.length ? 'Mostrando ' + (from + 1) + ' a ' + (from + slice.length) + ' de ' + list.length : '') + '</span>' +
+      (pages > 1 ? '<div class="pg"><button type="button" data-au-page="' + (auditUi.page - 1) + '"' + (auditUi.page ? '' : ' disabled') + '>«</button>' + btns +
+      '<button type="button" data-au-page="' + (auditUi.page + 1) + '"' + (auditUi.page < pages - 1 ? '' : ' disabled') + '>»</button></div>' : '');
+  }
+  settingsEl.addEventListener('input', function (e) {
+    var f = e.target.closest('[data-au]');
+    if (!f) return;
+    auditUi[f.dataset.au] = f.value; auditUi.page = 0; renderAuditList();
+  });
+  settingsEl.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-au-page]');
+    if (b && !b.disabled) { auditUi.page = Number(b.dataset.auPage); renderAuditList(); return; }
+    var r = e.target.closest('[data-au-restore]');
+    if (!r) return;
+    var a = (state.audit || []).filter(function (x) { return x.id === r.dataset.auRestore; })[0];
+    if (!a || !a.snap) return;
+    confirmBox('Restaurar o projeto ' + a.pname + '?', 'Ele volta para a lista como estava quando foi excluído.', 'Restaurar').then(function (ok) {
+      if (!ok || byId(state.projects, a.pid)) return;
+      var pr = normalize({ projects: [JSON.parse(JSON.stringify(a.snap))] }).projects[0];
+      if (!pr) return;
+      a.restored = true;
+      restoredIds[pr.id] = true;
+      state.projects.push(pr);
+      purgeRefs(); save(); refreshData(); renderSettings();
+      toast('Projeto ' + pr.name + ' restaurado.');
+    });
+  });
 
   function usersPanel() {
     var users = keyUsers(), admins = keyAdmins(), me = currentUser();
@@ -2823,6 +3088,7 @@
         btn.disabled = true;
         setUserPass(gh.cfg.token, uidg, cg ? cg.name : '', FIRST_PASS, true).then(function (r) {
           toast(r.ok ? (action === 'u-reset' ? 'Senha de ' + cg.name + ' voltou para 0303.' : 'Acesso liberado. ' + cg.name + ' entra com a senha 0303.') : 'Não consegui salvar agora. Tente de novo.');
+          if (r.ok) auditNow('user', action === 'u-reset' ? 'Redefiniu a senha de ' + cg.name + ' para 0303.' : 'Liberou o acesso de ' + cg.name + '.');
           renderSettings();
         });
       };
@@ -2854,7 +3120,7 @@
         updateKeyFile(gh.cfg.token, function (b) {
           if (b.users) delete b.users[uid0];
           if (Array.isArray(b.admins)) b.admins = b.admins.filter(function (x) { return x !== uid0; });
-        }).then(function (r) { toast(r.ok ? 'Acesso removido.' : 'Não consegui salvar agora. Tente de novo.'); renderSettings(); });
+        }).then(function (r) { toast(r.ok ? 'Acesso removido.' : 'Não consegui salvar agora. Tente de novo.'); if (r.ok) auditNow('user', 'Apagou o acesso de ' + nm + '.'); renderSettings(); });
       });
       return;
     }
@@ -2862,7 +3128,7 @@
       confirmBox('Desativar a senha da empresa?', 'Depois disso, só entra quem tem usuário e senha próprios. Quem já está conectado continua conectado até sair.', 'Desativar').then(function (ok) {
         if (!ok) return;
         updateKeyFile(gh.cfg.token, function (b) { delete b.lock; })
-          .then(function (r) { toast(r.ok ? 'Senha da empresa desativada.' : 'Não consegui salvar agora. Tente de novo.'); renderSettings(); });
+          .then(function (r) { toast(r.ok ? 'Senha da empresa desativada.' : 'Não consegui salvar agora. Tente de novo.'); if (r.ok) auditNow('user', 'Desativou a senha da empresa.'); renderSettings(); });
       });
       return;
     }
@@ -3005,6 +3271,7 @@
       b.admins = a;
     }).then(function (r) {
       if (!r.ok) { toast('Não consegui salvar agora. Tente de novo.'); }
+      else { var cu = byId(state.collaborators, uid1); auditNow('user', (on ? 'Deu' : 'Tirou') + ' acesso de administrador ' + (on ? 'para ' : 'de ') + (cu ? cu.name : 'usuário') + '.'); }
       showTab(); renderSettings();
     });
   });
@@ -3122,8 +3389,11 @@
         var data = JSON.parse(reader.result);
         if (!data || !Array.isArray(data.projects)) throw new Error('formato');
         var prefs = pick(state, LOCAL_KEYS);
+        var keepAudit = state.audit || [];
         state = normalize(Object.assign({}, data, prefs));
+        state.audit = keepAudit;
         takeSnap();
+        audit('cfg', 'Importou um backup (' + state.projects.length + ' projetos).');
         state.tab = 'settings';
         purgeRefs(); save(); renderAll();
         toast(gh.ready ? 'Backup importado. Salvando no GitHub…' : 'Backup importado neste navegador. Conecte o GitHub para salvar lá.');
@@ -3431,14 +3701,74 @@
   /* =========================================================
      Histórico automático: registra quem mudou o quê
      ========================================================= */
-  var snap = {}, logTimer = null, skipStatusLog = {};
+  /* ---------- Histórico de atividades (só administradores veem) ---------- */
+  var AUDIT_DAYS = 2; /* mudar também em pruneAudit */
+  function pruneAudit(list) { /* roda antes de AUDIT_DAYS existir */
+    var lim = new Date(Date.now() - 2 * 864e5).toISOString(); /* guarda 2 dias */
+    return list.filter(function (a) { return a.at >= lim; });
+  }
+  function audit(k, txt, p, opt) {
+    state.audit = state.audit || [];
+    var me = currentUser() || '';
+    opt = opt || {};
+    if (opt.f === 'progress' && p) {
+      var last = state.audit[state.audit.length - 1];
+      if (last && last.f === 'progress' && last.pid === p.id && last.by === me && (Date.now() - new Date(last.at).getTime()) < 10 * 60000) {
+        if (String(last.from) === String(p.progress)) { state.audit.pop(); return; }
+        last.txt = 'Mudou o andamento de ' + last.from + '% para ' + p.progress + '%.';
+        last.at = nowISO();
+        return;
+      }
+    }
+    var e = { id: uid(), at: nowISO(), by: me, k: k, txt: txt };
+    if (p) { e.pid = p.id; e.pname = p.name; }
+    if (opt.f) e.f = opt.f;
+    if (opt.from !== undefined) e.from = String(opt.from);
+    if (opt.snap) e.snap = opt.snap;
+    state.audit.push(e);
+    state.audit = pruneAudit(state.audit);
+  }
+  /* para ações fora dos dados (usuários e senhas) */
+  function auditNow(k, txt) { audit(k, txt); save(); if (state.tab === 'settings') renderAuditList(); }
+
+  var snap = {}, fullSnap = {}, cfgSnap = null, logTimer = null, skipStatusLog = {}, restoredIds = {};
+  var AUDIT_LISTS = [['priorities', 'a prioridade'], ['statuses', 'o status'], ['types', 'a disciplina'], ['collaborators', 'o usuário']];
+  function cfgOf() {
+    var o = { title: state.title };
+    AUDIT_LISTS.forEach(function (l) {
+      o[l[0]] = state[l[0]].map(function (x) { return { id: x.id, name: x.name, color: x.color, clearPriority: x.clearPriority }; });
+    });
+    return o;
+  }
+  function logCfgChanges() {
+    if (!cfgSnap) return false;
+    var o = cfgSnap, n = cfgOf(), ch = false;
+    if (o.title !== n.title) { audit('cfg', 'Mudou o título do gestor de "' + o.title + '" para "' + n.title + '".'); ch = true; }
+    AUDIT_LISTS.forEach(function (l) {
+      var a = o[l[0]], b = n[l[0]], noun = l[1];
+      var ida = a.map(function (x) { return x.id; }), idb = b.map(function (x) { return x.id; });
+      b.forEach(function (x) {
+        var old = a.filter(function (y) { return y.id === x.id; })[0];
+        if (!old) { audit('cfg', 'Criou ' + noun + ' "' + x.name + '".'); ch = true; return; }
+        if (old.name !== x.name) { audit('cfg', 'Renomeou ' + noun + ' "' + old.name + '" para "' + x.name + '".'); ch = true; }
+        if (old.color !== x.color) { audit('cfg', 'Mudou a cor d' + noun.slice(0, 1) + ' ' + noun.slice(2) + ' "' + x.name + '".'); ch = true; }
+        if (old.clearPriority !== x.clearPriority) { audit('cfg', (x.clearPriority ? 'Ligou' : 'Desligou') + ' "Zera prioridade" no status "' + x.name + '".'); ch = true; }
+      });
+      a.forEach(function (x) { if (idb.indexOf(x.id) < 0) { audit('cfg', 'Apagou ' + noun + ' "' + x.name + '".'); ch = true; } });
+      var keep = ida.filter(function (id) { return idb.indexOf(id) >= 0; });
+      var keepB = idb.filter(function (id) { return ida.indexOf(id) >= 0; });
+      if (keep.join() !== keepB.join()) { audit('cfg', 'Mudou a ordem d' + (l[0] === 'statuses' ? 'os status' : (l[0] === 'types' ? 'as disciplinas' : (l[0] === 'priorities' ? 'as prioridades' : 'os usuários'))) + '.'); ch = true; }
+    });
+    return ch;
+  }
   function snapOf(p) {
     return { name: p.name, statusId: p.statusId, priorityId: p.priorityId, deadline: p.deadline, progress: p.progress,
       responsibles: p.responsibles.slice(), typeIds: p.typeIds.slice(), desc: p.desc, notes: p.notes, client: p.client, location: p.location };
   }
   function takeSnap() {
-    snap = {};
-    state.projects.forEach(function (p) { snap[p.id] = snapOf(p); });
+    snap = {}; fullSnap = {};
+    state.projects.forEach(function (p) { snap[p.id] = snapOf(p); fullSnap[p.id] = JSON.parse(JSON.stringify(p)); });
+    cfgSnap = cfgOf();
   }
   function scheduleLog() {
     clearTimeout(logTimer);
@@ -3447,6 +3777,7 @@
   function nameIn(list, id, empty) { var x = byId(list, id); return x ? x.name : empty; }
   function fmtDate(d) { if (!d) return ''; var a = d.split('-'); return a.length === 3 ? a[2] + '/' + a[1] + '/' + a[0] : d; }
   function pushLog(p, text, f, from) {
+    audit('proj', text, p, { f: f, from: from });
     var me = currentUser() || '';
     var last = p.comments && p.comments[p.comments.length - 1];
     if (f === 'progress' && last && last.kind === 'log' && last.f === 'progress' && last.by === me && (Date.now() - new Date(last.at).getTime()) < 10 * 60000) {
@@ -3465,7 +3796,7 @@
     var changed = false;
     state.projects.forEach(function (p) {
       var o = snap[p.id];
-      if (!o) { pushLog(p, 'Criou o projeto.'); changed = true; return; }
+      if (!o) { pushLog(p, restoredIds[p.id] ? 'Restaurou o projeto (estava excluído).' : 'Criou o projeto.'); changed = true; return; }
       var stChanged = o.statusId !== p.statusId;
       if (stChanged && !skipStatusLog[p.id]) {
         pushLog(p, 'Mudou o status de ' + nameIn(state.statuses, o.statusId, 'Sem status') + ' para ' + nameIn(state.statuses, p.statusId, 'Sem status') + '.'); changed = true;
@@ -3495,9 +3826,16 @@
       if (o.location !== p.location) edits.push('o local');
       if (edits.length) { pushLog(p, 'Editou ' + edits.join(', ').replace(/, ([^,]*)$/, ' e $1') + '.'); changed = true; }
     });
-    skipStatusLog = {};
+    Object.keys(fullSnap).forEach(function (id) {
+      if (byId(state.projects, id)) return;
+      audit('proj', 'Excluiu o projeto.', fullSnap[id], { snap: fullSnap[id] });
+      changed = true;
+    });
+    if (logCfgChanges()) changed = true;
+    skipStatusLog = {}; restoredIds = {};
     takeSnap();
     if (changed) {
+      renderAuditList();
       if (!modalEl.hidden && editingId) renderTalk();
       refreshData();
     }
@@ -3527,17 +3865,44 @@
   function confStatusId() { var st = state.statuses.filter(function (x) { return norm(x.name).indexOf('confer') >= 0; })[0]; return st ? st.id : ''; }
   function doneStatusId() { var st = state.statuses.filter(function (x) { return isDoneStatus(x.id); })[0]; return st ? st.id : ''; }
   function pendingAdj(p) { return (p.adjustments || []).filter(function (a) { return !a.done; }).length; }
-  function addComment(p, text, kind) {
+  function addComment(p, text, kind, notify) {
     p.comments = p.comments || [];
-    p.comments.push({ id: uid(), by: currentUser() || '', at: nowISO(), text: text, kind: kind || '' });
+    var c = { id: uid(), by: currentUser() || '', at: nowISO(), text: text, kind: kind || '' };
+    var me = currentUser();
+    var list = (notify || []).filter(function (id, i, a) { return id && id !== me && a.indexOf(id) === i; });
+    if (list.length) c.notify = list;
+    p.comments.push(c);
+    if (kind === 'sys') audit('conf', text.replace(/\n/g, ' '), p);
+  }
+  /* Menções: @Nome do colaborador dentro do texto */
+  function mentionsIn(text) {
+    var low = String(text || '').toLowerCase();
+    return state.collaborators.filter(function (c) {
+      var i = low.indexOf('@' + c.name.toLowerCase());
+      if (i < 0) return false;
+      var nx = low.charAt(i + c.name.length + 1);
+      return !nx || !/[a-z0-9à-ú]/i.test(nx);
+    }).map(function (c) { return c.id; });
+  }
+  function msgTextHTML(text) {
+    var me = currentUser();
+    var names = state.collaborators.slice().sort(function (a, b) { return b.name.length - a.name.length; });
+    var out = esc(text);
+    names.forEach(function (c) {
+      out = out.split('@' + esc(c.name)).join('\u0000' + c.id + '\u0001');
+    });
+    return out.replace(/\u0000([^\u0001]+)\u0001/g, function (_, id) {
+      var c = byId(state.collaborators, id);
+      return '<span class="mention' + (id === me ? ' me' : '') + '">@' + esc(c ? c.name : '') + '</span>';
+    });
   }
   function flagsHTML(p) {
     var n = pendingAdj(p), c = (p.comments || []).filter(function (m) { return m.kind !== 'sys' && m.kind !== 'log'; }).length;
     var nw = hasNews(p);
-    if (!n && !c && !nw) return '';
+    if (!n && !nw) return '';
     return '<div class="p-flags">' +
       (n ? '<span class="flag adj" title="Ajustes pendentes">⚠ ' + n + ' ajuste' + (n > 1 ? 's' : '') + '</span>' : '') +
-      (nw ? '<span class="flag newc" title="Mensagem nova">● novo</span>' : (c ? '<span class="flag msgc" title="Mensagens">💬 ' + c + '</span>' : '')) +
+      (nw ? '<span class="flag newc" title="Notificação nova">● novo</span>' : '') +
       '</div>';
   }
 
@@ -3545,7 +3910,11 @@
   function seenKey() { return KP + 'seen.' + (currentUser() || '_'); }
   function seenMap() {
     var m = readLocal(seenKey());
-    if (!m || typeof m !== 'object') { m = { since: nowISO(), p: {} }; writeLocal(seenKey(), m); }
+    if (!m || typeof m !== 'object') {
+      /* no TESTE, mensagens dos últimos 3 dias já aparecem como novas na primeira visita */
+      m = { since: IS_PROD ? nowISO() : new Date(Date.now() - 3 * 864e5).toISOString(), p: {} };
+      writeLocal(seenKey(), m);
+    }
     m.p = m.p || {};
     return m;
   }
@@ -3553,23 +3922,24 @@
     if (!currentUser()) return;
     var m = seenMap(); m.p[pid] = nowISO(); writeLocal(seenKey(), m);
   }
-  function lastOtherMsg(p) {
+  /* Notificação = comentário que lista o usuário em "notify" (menção ou devolução com ajustes) */
+  function lastNotif(p) {
     var me = currentUser();
-    var list = (p.comments || []).filter(function (c) { return c.by !== me && c.kind !== 'log'; });
+    var list = (p.comments || []).filter(function (c) { return c.by !== me && Array.isArray(c.notify) && c.notify.indexOf(me) >= 0; });
     return list.length ? list[list.length - 1] : null;
-  }
-  function involved(p) {
-    var me = currentUser();
-    return p.responsibles.indexOf(me) >= 0 || (p.comments || []).some(function (c) { return c.by === me; });
   }
   function hasNews(p) {
     var me = currentUser();
-    if (!me || !involved(p)) return false;
-    var last = lastOtherMsg(p);
+    if (!me) return false;
+    var last = lastNotif(p);
     if (!last) return false;
     var m = seenMap();
     var ref = m.p[p.id] || m.since;
     return last.at > ref;
+  }
+  function notifText(m) {
+    if (m.kind === 'sys') return whoName(m.by) + ' devolveu com ajustes';
+    return whoName(m.by) + ' mencionou você: ' + m.text;
   }
   var bellOpen = false;
   function renderBell() {
@@ -3579,22 +3949,102 @@
     btn.hidden = !(me && ghConfigured());
     if (btn.hidden) { $('#bellPop').hidden = true; return; }
     seenMap();
-    var news = state.projects.filter(hasNews).sort(function (a, b) { return lastOtherMsg(b).at.localeCompare(lastOtherMsg(a).at); });
+    var all = myNotifs();
+    var unread = all.filter(function (x) { return x.unread; }).length;
+    var total = all.length;
+    all = all.slice(0, 5);
+    var news = unread ? [1] : [];
     var nEl = $('#bellN');
-    nEl.hidden = !news.length; nEl.textContent = news.length;
+    nEl.hidden = !unread; nEl.textContent = unread;
     var pop = $('#bellPop');
     pop.hidden = !bellOpen;
     if (!bellOpen) return;
-    pop.innerHTML = '<div class="bell-head"><span>Novidades</span>' + (news.length ? '<button type="button" data-bell-all>Marcar tudo como visto</button>' : '') + '</div>' +
-      (news.length ? news.map(function (p) {
-        var m = lastOtherMsg(p);
-        return '<button type="button" class="bell-item" data-bell="' + esc(p.id) + '"><b>' + esc(p.name) + '</b><span>' + esc(whoName(m.by)) + ': ' + esc(m.text) + '</span><span>' + fmtWhen(m.at) + '</span></button>';
-      }).join('') : '<div class="bell-empty">Nada novo por aqui.</div>');
+    pop.innerHTML = '<div class="bell-head"><span>Notificações</span>' + (news.length ? '<button type="button" data-bell-all>Marcar tudo como visto</button>' : '') + '</div>' +
+      (all.length ? all.map(function (x) {
+        return '<button type="button" class="bell-item' + (x.unread ? ' unread' : '') + '" data-bell="' + esc(x.p.id) + '"><b>' + esc(x.p.name) + '</b><span>' + esc(notifText(x.m)) + '</span><span>' + fmtWhen(x.m.at) + '</span></button>';
+      }).join('') : '<div class="bell-empty">Nenhuma notificação ainda.</div>') +
+      '<button type="button" class="bell-more" data-bell-center>Ver todas as notificações' + (total ? ' (' + total + ')' : '') + '</button>';
+    if (ncOpen) renderNC();
   }
+  /* Todas as notificações do usuário, da mais nova para a mais antiga */
+  function myNotifs() {
+    var me = currentUser();
+    if (!me) return [];
+    var sm = seenMap(), all = [];
+    state.projects.forEach(function (p) {
+      var ref = sm.p[p.id] || sm.since;
+      (p.comments || []).forEach(function (c) {
+        if (c.by !== me && Array.isArray(c.notify) && c.notify.indexOf(me) >= 0) all.push({ p: p, m: c, unread: c.at > ref });
+      });
+    });
+    return all.sort(function (a, b) { return b.m.at.localeCompare(a.m.at); });
+  }
+
+  /* ---------- Central de notificações (histórico completo) ---------- */
+  var ncOpen = false, nc = { page: 0, q: '', f: 'all', sel: null };
+  var NC_PER = 10;
+  function openNC() {
+    ncOpen = true; nc.page = 0; nc.sel = null; nc.q = ''; $('#ncSearch').value = '';
+    bellOpen = false; renderBell();
+    $('#notifCenter').hidden = false; renderNC();
+  }
+  function closeNC() { ncOpen = false; $('#notifCenter').hidden = true; }
+  function renderNC() {
+    var q = norm(nc.q.trim());
+    var all = myNotifs();
+    $('#ncAllSeen').hidden = !all.some(function (x) { return x.unread; });
+    var list = all.filter(function (x) {
+      if (nc.f === 'unread' && !x.unread) return false;
+      return !q || norm(x.p.name + ' ' + whoName(x.m.by) + ' ' + x.m.text).indexOf(q) >= 0;
+    });
+    var pages = Math.max(1, Math.ceil(list.length / NC_PER));
+    if (nc.page >= pages) nc.page = pages - 1;
+    var from = nc.page * NC_PER, slice = list.slice(from, from + NC_PER);
+    $('#ncList').innerHTML = slice.length ? slice.map(function (x) {
+      return '<button type="button" class="nc-item' + (x.unread ? ' unread' : '') + (nc.sel === x.m.id ? ' sel' : '') + '" data-nc-item="' + esc(x.m.id) + '">' +
+        '<b>' + esc(x.p.name) + '</b><div class="nc-sub"><span>' + esc(notifText(x.m)) + '</span><span>' + fmtWhen(x.m.at) + '</span></div></button>';
+    }).join('') : '<div class="bell-empty">' + (all.length ? 'Nada encontrado.' : 'Nenhuma notificação ainda.') + '</div>';
+    var btns = '';
+    var startP = Math.max(0, Math.min(nc.page - 2, pages - 5));
+    for (var i = startP; i < Math.min(pages, startP + 5); i++) btns += '<button type="button" data-nc-page="' + i + '" class="' + (i === nc.page ? 'on' : '') + '">' + (i + 1) + '</button>';
+    $('#ncPager').innerHTML = '<span>' + (list.length ? 'Mostrando ' + (from + 1) + ' a ' + (from + slice.length) + ' de ' + list.length : '0 notificações') + '</span>' +
+      '<div class="pg"><button type="button" data-nc-page="' + (nc.page - 1) + '"' + (nc.page ? '' : ' disabled') + '>«</button>' + btns +
+      '<button type="button" data-nc-page="' + (nc.page + 1) + '"' + (nc.page < pages - 1 ? '' : ' disabled') + '>»</button></div>';
+    var cur = nc.sel ? all.filter(function (x) { return x.m.id === nc.sel; })[0] : null;
+    $('#ncBox').classList.toggle('det-open', !!cur);
+    $('#ncDetail').innerHTML = cur ?
+      '<div class="nc-det"><span class="nc-kind' + (cur.m.kind === 'sys' ? ' ret' : '') + '">' + (cur.m.kind === 'sys' ? 'Devolvido com ajustes' : 'Menção') + '</span>' +
+      '<h3>' + esc(cur.p.name) + '</h3><div class="nc-meta">' + esc(whoName(cur.m.by)) + ' · ' + fmtWhen(cur.m.at) + '</div>' +
+      '<div class="nc-text">' + msgTextHTML(cur.m.text) + '</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn btn-primary" data-nc-open="' + esc(cur.p.id) + '">Abrir projeto</button>' +
+      '<button type="button" class="btn nc-back" data-nc="back">Voltar à lista</button></div></div>' :
+      '<div class="nc-none">Nenhuma notificação selecionada.</div>';
+  }
+  $('#notifCenter').addEventListener('click', function (e) {
+    if (e.target.id === 'notifCenter') { closeNC(); return; }
+    var b;
+    if ((b = e.target.closest('[data-nc-item]'))) {
+      nc.sel = b.dataset.ncItem;
+      var x = myNotifs().filter(function (y) { return y.m.id === nc.sel; })[0];
+      if (x && x.unread) { markSeen(x.p.id); refreshData(); }
+      renderBell(); renderNC(); return;
+    }
+    if ((b = e.target.closest('[data-nc-page]')) && !b.disabled) { nc.page = Number(b.dataset.ncPage); renderNC(); return; }
+    if ((b = e.target.closest('[data-nc-open]'))) { closeNC(); openProject(b.dataset.ncOpen); return; }
+    if ((b = e.target.closest('[data-nc]'))) {
+      if (b.dataset.nc === 'close') closeNC();
+      else if (b.dataset.nc === 'back') { nc.sel = null; renderNC(); }
+      else if (b.dataset.nc === 'all-seen') { state.projects.filter(hasNews).forEach(function (p) { markSeen(p.id); }); refreshData(); renderNC(); }
+    }
+  });
+  $('#ncSearch').addEventListener('input', function () { nc.q = this.value; nc.page = 0; renderNC(); });
+  $('#ncFilter').addEventListener('change', function () { nc.f = this.value; nc.page = 0; renderNC(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && ncOpen) closeNC(); });
   $('#bellBtn').addEventListener('click', function (e) { e.stopPropagation(); bellOpen = !bellOpen; renderBell(); });
   $('#bellPop').addEventListener('click', function (e) {
     var all = e.target.closest('[data-bell-all]');
     if (all) { state.projects.filter(hasNews).forEach(function (p) { markSeen(p.id); }); bellOpen = false; renderBell(); refreshData(); return; }
+    if (e.target.closest('[data-bell-center]')) { openNC(); return; }
     var it = e.target.closest('[data-bell]');
     if (it) { bellOpen = false; renderBell(); openProject(it.dataset.bell); }
   });
@@ -3648,9 +4098,9 @@
     html += '<div class="talk-title">Mensagens e histórico</div>' +
       '<div class="msgs" id="talkMsgs">' + (msgs.length ? msgs.map(function (m) {
         if (m.kind === 'log') return '<div class="log-line"><b>' + esc(whoName(m.by)) + '</b> ' + esc(m.text.charAt(0).toLowerCase() + m.text.slice(1)) + ' <span>' + fmtWhen(m.at) + '</span></div>';
-        return '<div class="msg' + (m.kind === 'sys' ? ' sys' : (m.by && m.by === me ? ' mine' : '')) + '"><div class="msg-h"><b>' + esc(whoName(m.by)) + '</b>' + fmtWhen(m.at) + '</div><div class="msg-t">' + esc(m.text) + '</div></div>';
+        return '<div class="msg' + (m.kind === 'sys' ? ' sys' : (m.by && m.by === me ? ' mine' : '')) + '"><div class="msg-h"><b>' + esc(whoName(m.by)) + '</b>' + fmtWhen(m.at) + '</div><div class="msg-t">' + msgTextHTML(m.text) + '</div></div>';
       }).join('') : '<div class="talk-empty">Nenhuma mensagem ainda.</div>') + '</div>' +
-      '<div class="msg-new"><textarea id="talk-text" rows="1" placeholder="Escreva uma mensagem…"></textarea><button type="button" class="btn btn-primary sm" data-talk="send">Enviar</button></div>';
+      '<div class="msg-new"><textarea id="talk-text" rows="1" placeholder="Mensagem (@ para mencionar)"></textarea><div class="mention-pop" id="mentionPop" hidden></div><button type="button" class="btn btn-primary sm" data-talk="send">Enviar</button></div>';
     box.innerHTML = html;
     var ml = $('#talkMsgs'); if (ml) ml.scrollTop = ml.scrollHeight;
     var tt = $('#talk-text'); if (tt) { tt.classList.add('autogrow'); tt.addEventListener('input', function () { autoGrow(tt); }); }
@@ -3669,7 +4119,7 @@
     if (a === 'send') {
       var t = $('#talk-text').value.trim();
       if (!t) { $('#talk-text').focus(); return; }
-      addComment(p, t);
+      addComment(p, t, '', mentionsIn(t));
       talkChanged(p);
       var t2 = $('#talk-text'); if (t2) t2.focus();
     } else if (a === 'approve') {
@@ -3693,7 +4143,7 @@
       p.adjustments = (p.adjustments || []).concat(lines.map(function (x) { return { id: uid(), text: x, by: me, at: at, done: false, doneBy: '', doneAt: '' }; }));
       skipStatusLog[p.id] = true;
       changeStatus(p, to);
-      addComment(p, 'Devolveu com ' + lines.length + ' ajuste' + (lines.length > 1 ? 's' : '') + ':\n' + lines.map(function (x) { return '• ' + x; }).join('\n') + '\nVoltou para ' + byId(state.statuses, to).name + '.', 'sys');
+      addComment(p, 'Devolveu com ' + lines.length + ' ajuste' + (lines.length > 1 ? 's' : '') + ':\n' + lines.map(function (x) { return '• ' + x; }).join('\n') + '\nVoltou para ' + byId(state.statuses, to).name + '.', 'sys', p.responsibles);
       syncStatusFields(p);
       talkUi.ret = false;
       talkChanged(p, 'Projeto devolvido com ajustes.');
@@ -3710,6 +4160,7 @@
     var adj = (p.adjustments || []).filter(function (x) { return x.id === cb.dataset.adj; })[0];
     if (!adj) return;
     adj.done = cb.checked;
+    audit('conf', (cb.checked ? 'Marcou como feito o ajuste: ' : 'Desmarcou o ajuste: ') + adj.text, p);
     adj.doneBy = cb.checked ? (currentUser() || '') : '';
     adj.doneAt = cb.checked ? nowISO() : '';
     var msg = '';
@@ -3721,6 +4172,63 @@
       msg = 'Todos os ajustes feitos. Projeto voltou para a conferência.';
     }
     talkChanged(p, msg);
+  });
+  /* Lista de @menção enquanto digita */
+  var mention = { open: false, items: [], idx: 0, start: 0 };
+  function mentionCtx(ta) {
+    var pos = ta.selectionStart, before = ta.value.slice(0, pos);
+    var at = before.lastIndexOf('@');
+    if (at < 0 || (at > 0 && /\w/.test(before.charAt(at - 1)))) return null;
+    var q = before.slice(at + 1);
+    if (q.length > 30 || /\n/.test(q)) return null;
+    return { start: at, q: q };
+  }
+  function renderMention(ta) {
+    var pop = $('#mentionPop');
+    if (!pop) return;
+    var ctx = mentionCtx(ta);
+    var me = currentUser();
+    var items = ctx ? state.collaborators.filter(function (c) {
+      return c.id !== me && norm(c.name).indexOf(norm(ctx.q)) === 0;
+    }) : [];
+    mention.open = !!(ctx && items.length);
+    if (!mention.open) { pop.hidden = true; return; }
+    mention.items = items; mention.start = ctx.start;
+    if (mention.idx >= items.length) mention.idx = 0;
+    pop.innerHTML = items.map(function (c, i) {
+      return '<button type="button" data-mention="' + esc(c.id) + '" class="' + (i === mention.idx ? 'on' : '') + '"><span class="dot" style="background:' + esc(c.color) + '"></span>' + esc(c.name) + '</button>';
+    }).join('');
+    pop.hidden = false;
+  }
+  function pickMention(id) {
+    var ta = $('#talk-text'), c = byId(state.collaborators, id);
+    if (!ta || !c) return;
+    var pos = ta.selectionStart;
+    var ins = '@' + c.name + ' ';
+    ta.value = ta.value.slice(0, mention.start) + ins + ta.value.slice(pos);
+    var np = mention.start + ins.length;
+    ta.focus(); ta.setSelectionRange(np, np);
+    mention.open = false; mention.idx = 0; $('#mentionPop').hidden = true;
+    autoGrow(ta);
+  }
+  $('#talkBox').addEventListener('input', function (e) { if (e.target.id === 'talk-text') { mention.idx = 0; renderMention(e.target); } });
+  $('#talkBox').addEventListener('mousedown', function (e) {
+    var b = e.target.closest('[data-mention]');
+    if (b) { e.preventDefault(); pickMention(b.dataset.mention); }
+  });
+  $('#talkBox').addEventListener('focusout', function (e) {
+    if (e.target.id === 'talk-text') setTimeout(function () { var pop = $('#mentionPop'); if (pop) pop.hidden = true; mention.open = false; }, 150);
+  });
+  $('#talkBox').addEventListener('keydown', function (e) {
+    if (e.target.id === 'talk-text' && mention.open) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        mention.idx = (mention.idx + (e.key === 'ArrowDown' ? 1 : -1) + mention.items.length) % mention.items.length;
+        renderMention(e.target); return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); pickMention(mention.items[mention.idx].id); return; }
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); mention.open = false; $('#mentionPop').hidden = true; return; }
+    }
   });
   $('#talkBox').addEventListener('keydown', function (e) {
     if (e.target.id === 'talk-text' && e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
@@ -4140,7 +4648,7 @@
 
   statsEl.addEventListener('click', function (e) {
     var sc = e.target.closest('[data-scope]');
-    if (sc) { state.statsScope = sc.dataset.scope; save(); renderStats(); return; }
+    if (sc) { state.statsScope = sc.dataset.scope; save(); renderStats(); replayAnim($('#stats'), 'view-anim'); return; }
     var g = e.target.closest('[data-goto]');
     if (!g) return;
     var kind = g.dataset.goto, id = g.dataset.id;
@@ -4299,7 +4807,7 @@
   });
 
   /* ---------- Versão ---------- */
-  var APP_VERSION = '2.5.1';
+  var APP_VERSION = '2.9.1';
   $('#verTxt').textContent = 'v' + APP_VERSION + (IS_PROD ? '' : '-teste');
 
   purgeRefs();
