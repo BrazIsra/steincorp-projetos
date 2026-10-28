@@ -380,6 +380,17 @@
     .ag-list { flex: 1; padding: 10px 10px 10px 0; }
   }
   .app-foot { padding: 0 24px 8px; text-align: left; font-size: 11px; line-height: 1.4; color: var(--muted); opacity: .6; }
+  .app-foot .ver-link { border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 2px; }
+  .app-foot .ver-link:hover { color: var(--primary); }
+  .modal.cl { max-width: 620px; display: flex; flex-direction: column; max-height: calc(100vh - 80px); }
+  .cl-body { overflow-y: auto; padding: 8px 22px 20px; }
+  .cl-ver { padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .cl-ver:last-child { border-bottom: 0; }
+  .cl-h { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+  .cl-h b { font-size: 15px; }
+  .cl-h span { font-size: 12px; color: var(--muted); }
+  .cl-h .cl-now { font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); }
+  .cl-ver ul { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.55; }
   .test-strip { position: fixed; top: 0; left: 0; right: 0; height: 26px; z-index: 70; display: flex; align-items: center; justify-content: center; padding: 0 12px; background: #f76b15; color: #fff; font-size: 12.5px; font-weight: 700; letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   body.is-test { padding-top: calc(var(--header-h) + 26px); }
   body.is-test .app-header { top: 26px; }
@@ -1049,6 +1060,15 @@
   </section>
 </main>
 <footer class="app-foot"><span id="verTxt"></span> · Developed by Israel Braz</footer>
+
+<!-- Versões e atualizações (só administradores abrem, clicando na versão do rodapé) -->
+<div id="changelog" class="backdrop" hidden>
+  <div class="modal cl" role="dialog" aria-modal="true" aria-labelledby="clTitle">
+    <div class="modal-head"><h2 id="clTitle">Versões e atualizações</h2>
+      <button type="button" class="icon-btn" data-cl-close aria-label="Fechar" title="Fechar">✕</button></div>
+    <div class="cl-body" id="clBody"></div>
+  </div>
+</div>
 
 <!-- Modal do projeto -->
 <div id="modal" class="backdrop" hidden>
@@ -1961,7 +1981,7 @@
     appTitle.title = adm ? 'Clique para editar o título' : '';
     if (!adm && document.activeElement === appTitle) appTitle.blur();
     if (!adm && state.tab === 'settings') state.tab = 'projects';
-    renderUserBtn(); renderBell();
+    renderUserBtn(); renderBell(); if (typeof renderVerLink === 'function') renderVerLink();
     $$('.tab').forEach(function (b) {
       var on = b.dataset.tab === state.tab;
       b.classList.toggle('active', on);
@@ -4807,8 +4827,41 @@
   });
 
   /* ---------- Versão ---------- */
-  var APP_VERSION = '2.9.1';
+  var APP_VERSION = '2.10.0';
+  /* Histórico de versões: acrescentar a nova versão no topo a cada lançamento */
+  var CHANGELOG = [
+    { v: '2.10.0', d: '28/10/2026', items: ['Lista de versões e atualizações: clique na versão no rodapé (só administradores).'] },
+    { v: '2.9.1', d: '28/10/2026', items: ['Transição suave na troca de abas, nas setas da agenda e nas estatísticas.'] },
+    { v: '2.9.0', d: '28/10/2026', items: ['Agenda com visão do mês inteiro (botão Mês/Semana), com transição.', 'Arrastar projeto para outro dia também na visão do mês.', '"+N mais" quando o dia tem muitos projetos abre a semana daquele dia.'] },
+    { v: '2.8.0', d: '28/10/2026', items: ['Histórico de atividades em Configurações (só administradores): quem fez o quê nos últimos 2 dias.', 'Filtros por usuário, tipo de ação e busca.', 'Restaurar projeto excluído pelo histórico.'] },
+    { v: '2.7.0', d: '28/10/2026', items: ['Sininho mostra as 5 últimas notificações.', 'Central de notificações com histórico completo, busca, filtro e páginas.'] },
+    { v: '2.6.1', d: '28/10/2026', items: ['Sininho guarda o histórico: notificações vistas continuam na lista.'] },
+    { v: '2.6.0', d: '28/10/2026', items: ['Menções com @nome no chat do projeto, com lista de colaboradores.', 'Sininho só avisa menção e projeto devolvido com ajustes.', 'Removido o balãozinho de mensagens da lista de projetos.'] },
+    { v: '2.5.1', d: '28/10/2026', items: ['Removido o botão "Só os meus" da agenda (use o filtro de colaborador).'] },
+    { v: '2.5.0', d: '28/10/2026', items: ['Barra colorida de prazo no topo dos projetos da agenda.', 'Filtros também na agenda, na mesma linha das setas.', '"Em aberto" agora é só em andamento, em revisão e em conferência (também nas estatísticas).', 'Só administradores podem mudar o nome do gestor.'] },
+    { v: '2.4.0', d: '28/10/2026', items: ['Agenda semanal no lugar do Board.', 'Arrastar projeto para outro dia muda o prazo.', 'Versão no rodapé e ambiente de teste separado.'] },
+    { v: 'Antes', d: '', items: ['Login por usuário com administradores, conversas, ajustes e conferência, histórico automático do projeto, filtros, estatísticas e conexão com o GitHub.'] }
+  ];
   $('#verTxt').textContent = 'v' + APP_VERSION + (IS_PROD ? '' : '-teste');
+  function renderVerLink() {
+    if (!APP_VERSION) return;
+    var el = $('#verTxt'), txt = 'v' + APP_VERSION + (IS_PROD ? '' : '-teste');
+    el.innerHTML = ghConfigured() && isAdmin() ? '<button type="button" class="ver-link" title="Ver versões e atualizações">' + txt + '</button>' : txt;
+  }
+  function openChangelog() {
+    $('#clBody').innerHTML = CHANGELOG.map(function (c, i) {
+      return '<div class="cl-ver"><div class="cl-h"><b>' + (c.v === 'Antes' ? 'Versões anteriores' : 'v' + c.v) + '</b>' + (c.d ? '<span>' + c.d + '</span>' : '') +
+        (c.v === APP_VERSION ? '<span class="cl-now">versão atual</span>' : '') + '</div>' +
+        '<ul>' + c.items.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>';
+    }).join('');
+    $('#changelog').hidden = false;
+  }
+  $('#verTxt').addEventListener('click', function (e) { if (e.target.closest('.ver-link') && isAdmin()) openChangelog(); });
+  $('#changelog').addEventListener('click', function (e) {
+    if (e.target.id === 'changelog' || e.target.closest('[data-cl-close]')) $('#changelog').hidden = true;
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#changelog').hidden) $('#changelog').hidden = true; });
+  renderVerLink();
 
   purgeRefs();
   takeSnap();
