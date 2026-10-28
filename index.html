@@ -198,6 +198,13 @@
   .msg { padding: 8px 10px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); }
   .msg.mine { background: var(--primary-soft); }
   .msg.sys { background: transparent; border-style: dashed; }
+  .msg, .log-line { position: relative; }
+  .msg-del { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; opacity: 0; transition: opacity .12s; }
+  .msg-del svg { width: 14px; height: 14px; }
+  .msg:hover .msg-del, .log-line:hover .msg-del, .msg-del:focus-visible { opacity: 1; }
+  .msg-del:hover { background: rgba(229,72,77,.12); color: var(--danger); }
+  .log-line .msg-del { top: 0; }
+  @media (hover: none) { .msg-del { opacity: .6; } }
   .msg-h { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-bottom: 3px; }
   .msg-h b { color: var(--text); }
   .msg-t { white-space: pre-wrap; word-break: break-word; font-size: 13.5px; }
@@ -2110,12 +2117,14 @@
     return norm(hay).indexOf(q) >= 0;
   }
   function passAllFilters(p) {
-    return passFilter('resp', p.responsibles) && passFilter('priority', p.priorityId) && passFilter('type', p.typeIds);
+    return passFilter('resp', respForFilter(p)) && passFilter('priority', p.priorityId) && passFilter('type', p.typeIds);
   }
+  /* em conferência, o conferente também conta no filtro de colaborador */
+  function respForFilter(p) { return isConfStatus(p.statusId) && p.checker ? p.responsibles.concat([p.checker]) : p.responsibles; }
   function filteredProjects() {
     var q = norm(ui.search.trim());
     return state.projects.filter(function (p) {
-      return passFilter('resp', p.responsibles) && passFilter('priority', p.priorityId) &&
+      return passFilter('resp', respForFilter(p)) && passFilter('priority', p.priorityId) &&
         passFilter('type', p.typeIds) && matchSearch(p, q);
     });
   }
@@ -2230,6 +2239,7 @@
       case 'deadline': return p.deadline || null;
       case 'progress': return p.progress;
       case 'responsible':
+        if (isConfStatus(p.statusId)) { var ck = byId(state.collaborators, p.checker); return ck ? ck.name : null; }
         var names = p.responsibles.map(function (id) { var c = byId(state.collaborators, id); return c ? c.name : ''; })
           .filter(Boolean).sort(collator.compare);
         return names.length ? names.join(', ') : null;
@@ -2269,7 +2279,9 @@
       '<div class="cell fill c-prio" data-label="Prioridade" tabindex="0" role="button" title="Clique para mudar a prioridade">' + pill(pr, 'Sem prioridade') + '</div>' +
       '<div class="cell c-due" data-label="Prazo" tabindex="0" role="button" title="Clique para mudar o prazo">' + dueHTML(p) + '</div>' +
       '<div class="cell c-prog" data-label="Andamento" tabindex="0" role="button" title="Clique para mudar o andamento">' + progHTML(p.progress) + '</div>' +
-      '<div class="cell c-resp" data-label="Responsável" tabindex="0" role="button" title="Clique para mudar os responsáveis"><span class="resp-wrap">' + avatarsHTML(p.responsibles, true) + '</span></div>' +
+      (isConfStatus(p.statusId)
+        ? '<div class="cell c-resp c-chk" data-label="Conferente" tabindex="0" role="button" title="Clique para escolher o conferente"><span class="resp-wrap">' + avatarsHTML(p.checker ? [p.checker] : [], true) + '</span></div>'
+        : '<div class="cell c-resp" data-label="Responsável" tabindex="0" role="button" title="Clique para mudar os responsáveis"><span class="resp-wrap">' + avatarsHTML(p.responsibles, true) + '</span></div>') +
       '<div class="cell c-type" data-label="Disciplina" tabindex="0" role="button" title="Clique para mudar as disciplinas">' + typesHTML(p, 'Sem disciplina') + '</div>' +
       '</div>';
   }
@@ -2285,12 +2297,13 @@
       '<button type="button" class="icon-btn sm" data-add="' + esc(g.id) + '" title="Novo projeto em ' + esc(g.name) + '">+</button>' +
       '</div>';
     if (collapsed) return '<div class="group collapsed" data-status="' + esc(g.id) + '" style="--gc:' + esc(g.color) + '">' + head + '</div>';
+    var confGroup = isConfStatus(g.id);
     var thead = '<div class="thead"><div></div>' + COLS.map(function (c) {
       var on = sort && sort.key === c.key;
       var arrow = on ? (sort.dir === 'desc' ? '▼' : '▲') : '';
       var tip = on ? (sort.dir === 'desc' ? 'Decrescente. Clique para crescente' : 'Crescente. Clique para decrescente') : 'Clique para classificar';
       return '<div><button type="button" class="sort-btn' + (on ? ' on' : '') + '" data-sort="' + c.key + '" title="' + tip + '">' +
-        c.label + '<span class="sort-arrow">' + arrow + '</span></button></div>';
+        (confGroup && c.key === 'responsible' ? 'Conferente' : c.label) + '<span class="sort-arrow">' + arrow + '</span></button></div>';
     }).join('') + '</div>';
     var body = items.length
       ? sortItems(items, sort).map(function (p) { return rowHTML(p, g.color); }).join('')
@@ -3571,7 +3584,7 @@
   var prioPop = $('#prioPop');
   var prioCtx = null;
   function pickKind(cell) {
-    return cell.classList.contains('c-prio') ? 'prio' : cell.classList.contains('c-type') ? 'type' : cell.classList.contains('c-resp') ? 'resp' : 'due';
+    return cell.classList.contains('c-prio') ? 'prio' : cell.classList.contains('c-type') ? 'type' : cell.classList.contains('c-chk') ? 'chk' : cell.classList.contains('c-resp') ? 'resp' : 'due';
   }
   function optHTML(val, on, lead, name) {
     return '<button type="button" class="prio-opt' + (on ? ' on' : '') + '" data-val="' + esc(val) + '" role="option" aria-selected="' + on + '">' +
@@ -3604,6 +3617,11 @@
     } else if (k === 'type') {
       opts = state.types.map(function (x) { return optHTML(x.id, p.typeIds.indexOf(x.id) >= 0, dotHTML(x.color), x.name); });
       if (!opts.length) opts.push('<div class="pick-empty">Nenhuma disciplina cadastrada. Cadastre em Configurações.</div>');
+    } else if (k === 'chk') {
+      opts = state.collaborators.map(function (c) {
+        return optHTML(c.id, p.checker === c.id, '<span class="avatar" style="background:' + esc(c.color) + '">' + esc(initials(c.name)) + '</span>', c.name);
+      });
+      opts.push(optHTML('', !p.checker, '<span class="avatar" style="background:var(--border)">–</span>', 'Ninguém definido'));
     } else if (k === 'resp') {
       opts = state.collaborators.map(function (c) {
         return optHTML(c.id, p.responsibles.indexOf(c.id) >= 0, '<span class="avatar" style="background:' + esc(c.color) + '">' + esc(initials(c.name)) + '</span>', c.name);
@@ -3683,6 +3701,7 @@
       return;
     }
     closePrioPop();
+    if (k === 'chk') { if ((p.checker || '') === v) return; p.checker = v; save(); refreshData(); return; }
     var field = 'priorityId';
     if (p[field] === v) return;
     p[field] = v;
@@ -4187,10 +4206,12 @@
         (!pend ? '<button type="button" class="btn sm" data-talk="adj-clear" style="margin-top:6px">Limpar ajustes feitos</button>' : '') + '</div>';
     }
     var msgs = p.comments || [];
+    var canDel = isAdmin() && !!currentUser();
     html += '<div class="talk-title">Mensagens e histórico</div>' +
       '<div class="msgs" id="talkMsgs">' + (msgs.length ? msgs.map(function (m) {
-        if (m.kind === 'log') return '<div class="log-line"><b>' + esc(whoName(m.by)) + '</b> ' + esc(m.text.charAt(0).toLowerCase() + m.text.slice(1)) + ' <span>' + fmtWhen(m.at) + '</span></div>';
-        return '<div class="msg' + (m.kind === 'sys' ? ' sys' : (m.by && m.by === me ? ' mine' : '')) + '"><div class="msg-h"><b>' + esc(whoName(m.by)) + '</b>' + fmtWhen(m.at) + '</div><div class="msg-t">' + msgTextHTML(m.text) + '</div></div>';
+        var del = canDel ? '<button type="button" class="msg-del" data-del-msg="' + esc(m.id) + '" title="Apagar do histórico (administrador)" aria-label="Apagar do histórico">' + ICON_TRASH + '</button>' : '';
+        if (m.kind === 'log') return '<div class="log-line">' + del + '<b>' + esc(whoName(m.by)) + '</b> ' + esc(m.text.charAt(0).toLowerCase() + m.text.slice(1)) + ' <span>' + fmtWhen(m.at) + '</span></div>';
+        return '<div class="msg' + (m.kind === 'sys' ? ' sys' : (m.by && m.by === me ? ' mine' : '')) + '">' + del + '<div class="msg-h"><b>' + esc(whoName(m.by)) + '</b>' + fmtWhen(m.at) + '</div><div class="msg-t">' + msgTextHTML(m.text) + '</div></div>';
       }).join('') : '<div class="talk-empty">Nenhuma mensagem ainda.</div>') + '</div>' +
       '<div class="msg-new"><textarea id="talk-text" rows="1" placeholder="Mensagem (@ para mencionar)"></textarea><div class="mention-pop" id="mentionPop" hidden></div><button type="button" class="btn btn-primary sm" data-talk="send">Enviar</button></div>';
     box.innerHTML = html;
@@ -4202,6 +4223,23 @@
     save(); refreshData(); renderTalk();
     if (msg) toast(msg);
   }
+  /* Administrador pode apagar uma mensagem ou linha do histórico do projeto (ex.: testes) */
+  var ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+  $('#talkBox').addEventListener('click', function (e) {
+    var db = e.target.closest('[data-del-msg]');
+    if (!db || !isAdmin()) return;
+    var p = editingId ? byId(state.projects, editingId) : null;
+    if (!p) return;
+    var m = (p.comments || []).filter(function (c) { return c.id === db.dataset.delMsg; })[0];
+    if (!m) return;
+    var short = m.text.replace(/\s+/g, ' ').slice(0, 80);
+    confirmBox('Apagar do histórico?', '"' + short + (m.text.length > 80 ? '…' : '') + '" (' + whoName(m.by) + ', ' + fmtWhen(m.at) + ') some do histórico deste projeto. Isso não muda o status nem os ajustes.', 'Apagar').then(function (ok) {
+      if (!ok) return;
+      p.comments = p.comments.filter(function (c) { return c.id !== m.id; });
+      audit('cfg', 'Apagou do histórico do projeto: "' + short + '" (de ' + whoName(m.by) + ').', p);
+      talkChanged(p, 'Apagado do histórico.');
+    });
+  });
   $('#talkBox').addEventListener('click', function (e) {
     var b = e.target.closest('[data-talk]');
     if (!b) return;
@@ -4901,9 +4939,11 @@
   });
 
   /* ---------- Versão ---------- */
-  var APP_VERSION = '2.11.0';
+  var APP_VERSION = '2.13.0';
   /* Histórico de versões: acrescentar a nova versão no topo a cada lançamento */
   var CHANGELOG = [
+    { v: '2.13.0', d: '28/10/2026', items: ['Na caixa Conferência, a coluna Responsável virou Conferente: mostra quem confere e permite trocar com um clique.', 'No filtro de colaborador, quem é conferente também vê os projetos que estão em conferência com ele.'] },
+    { v: '2.12.0', d: '28/10/2026', items: ['Administrador pode apagar mensagens e linhas do histórico do projeto (ícone de lixeira ao passar o mouse).', 'Cada exclusão fica registrada no Histórico de atividades.'] },
     { v: '2.11.0', d: '28/10/2026', items: ['Conferente no projeto: escolha quem confere; ele é avisado no sininho quando o projeto entra em conferência.', 'Feriados obrigatórios (nacionais e de Lages-SC) marcados na agenda, com aviso ao arrastar um prazo para um feriado.', 'Ficha do projeto cabe na tela: o botão Salvar fica sempre visível.', 'Campo Observações removido: o texto que havia nele foi juntado ao fim da descrição.'] },
     { v: '2.10.0', d: '28/10/2026', items: ['Lista de versões e atualizações: clique na versão no rodapé (só administradores).'] },
     { v: '2.9.1', d: '28/10/2026', items: ['Transição suave na troca de abas, nas setas da agenda e nas estatísticas.'] },
