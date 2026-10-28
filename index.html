@@ -2119,8 +2119,8 @@
   function passAllFilters(p) {
     return passFilter('resp', respForFilter(p)) && passFilter('priority', p.priorityId) && passFilter('type', p.typeIds);
   }
-  /* em conferência, o conferente também conta no filtro de colaborador */
-  function respForFilter(p) { return isConfStatus(p.statusId) && p.checker ? p.responsibles.concat([p.checker]) : p.responsibles; }
+  /* filtro de colaborador segue a coluna: em conferência vale o conferente, nas outras caixas os responsáveis */
+  function respForFilter(p) { return isConfStatus(p.statusId) ? (p.checker ? [p.checker] : []) : p.responsibles; }
   function filteredProjects() {
     var q = norm(ui.search.trim());
     return state.projects.filter(function (p) {
@@ -2140,7 +2140,7 @@
       if (n) total++;
       var badge = n ? '<span class="badge' + (f.mode === 'exclude' ? ' excl' : '') + '">' + (f.mode === 'exclude' ? 'exceto ' : '') + n + '</span>' : '';
       var opts = state[def.list].map(function (it) {
-        var count = state.projects.filter(function (p) { return hasRef(p, def.field, it.id); }).length;
+        var count = state.projects.filter(function (p) { return def.key === 'resp' ? respForFilter(p).indexOf(it.id) >= 0 : hasRef(p, def.field, it.id); }).length;
         return '<label class="opt"><input type="checkbox" data-f="check" value="' + esc(it.id) + '"' + (f.selected.indexOf(it.id) >= 0 ? ' checked' : '') + '>' +
           '<span class="dot" style="background:' + esc(it.color) + '"></span><span class="opt-name">' + esc(it.name) + '</span><span class="opt-count">' + count + '</span></label>';
       }).join('') || '<div class="multi-empty">Nenhum item cadastrado.</div>';
@@ -4939,9 +4939,10 @@
   });
 
   /* ---------- Versão ---------- */
-  var APP_VERSION = '2.13.0';
+  var APP_VERSION = '2.13.1';
   /* Histórico de versões: acrescentar a nova versão no topo a cada lançamento */
   var CHANGELOG = [
+    { v: '2.13.1', d: '28/10/2026', items: ['Filtro de colaborador segue as colunas: nos projetos em conferência conta só o conferente; nas outras caixas, os responsáveis.'] },
     { v: '2.13.0', d: '28/10/2026', items: ['Na caixa Conferência, a coluna Responsável virou Conferente: mostra quem confere e permite trocar com um clique.', 'No filtro de colaborador, quem é conferente também vê os projetos que estão em conferência com ele.'] },
     { v: '2.12.0', d: '28/10/2026', items: ['Administrador pode apagar mensagens e linhas do histórico do projeto (ícone de lixeira ao passar o mouse).', 'Cada exclusão fica registrada no Histórico de atividades.'] },
     { v: '2.11.0', d: '28/10/2026', items: ['Conferente no projeto: escolha quem confere; ele é avisado no sininho quando o projeto entra em conferência.', 'Feriados obrigatórios (nacionais e de Lages-SC) marcados na agenda, com aviso ao arrastar um prazo para um feriado.', 'Ficha do projeto cabe na tela: o botão Salvar fica sempre visível.', 'Campo Observações removido: o texto que havia nele foi juntado ao fim da descrição.'] },
