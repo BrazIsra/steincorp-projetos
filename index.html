@@ -2312,7 +2312,7 @@
   var DOW = ['dom.', 'seg.', 'ter.', 'qua.', 'qui.', 'sex.', 'sáb.'];
   var MES = ['jan.', 'fev.', 'mar.', 'abr.', 'mai.', 'jun.', 'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.'];
   function isoDay(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
-  var agMine = !!readLocal(KP + 'agMine.v1');
+  var agMine = false; /* "Só os meus" removido: use o filtro de colaborador */
   function agMineOk(p) { var me = currentUser(); return !agMine || !me || p.responsibles.indexOf(me) >= 0; }
   function agDueClass(p) {
     if (isDone(p) || !p.deadline) return 'due-none';
@@ -2350,7 +2350,6 @@
       '<span class="ag-range">' + range + '</span>' +
       '<button type="button" class="icon-btn" data-ag="1" title="Próxima semana" aria-label="Próxima semana">›</button>' +
       (agendaWeek !== 0 ? '<button type="button" class="btn sm ag-today" data-ag="0">Hoje</button>' : '') +
-      (me ? '<label class="ag-mine"><input type="checkbox" id="agMine"' + (agMine ? ' checked' : '') + '> Só os meus</label>' : '') +
       '</div>' +
       '<div class="ag-grid">' + cols + '</div>' +
       (!shown ? '<div class="ag-foot">Nenhum projeto com prazo nesta semana.</div>' : '');
@@ -2455,7 +2454,6 @@
   agendaEl.addEventListener('contextmenu', function (e) { if (agDrag) e.preventDefault(); });
 
   agendaEl.addEventListener('change', function (e) {
-    if (e.target.id === 'agMine') { agMine = e.target.checked; writeLocal(KP + 'agMine.v1', agMine); renderBoard(); }
   });
   agendaEl.addEventListener('click', function (e) {
     if (agSuppressClick) { e.preventDefault(); return; }
@@ -4301,7 +4299,7 @@
   });
 
   /* ---------- Versão ---------- */
-  var APP_VERSION = '2.5.0';
+  var APP_VERSION = '2.5.1';
   $('#verTxt').textContent = 'v' + APP_VERSION + (IS_PROD ? '' : '-teste');
 
   purgeRefs();
