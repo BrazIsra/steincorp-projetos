@@ -87,6 +87,8 @@
     max-width: 340px;
   }
   #appTitle:hover { background: var(--hover); }
+  #appTitle[contenteditable="false"] { cursor: default; }
+  #appTitle[contenteditable="false"]:hover { background: none; }
   #appTitle:focus { border-color: var(--primary); background: var(--surface); text-overflow: clip; }
 
   .tabs {
@@ -233,7 +235,68 @@
   textarea { resize: vertical; }
   input[type="date"] { min-height: 38px; }
 
-  main { padding: 24px; }
+  main { padding: 24px 24px 8px; }
+  .agenda { max-width: 1400px; margin: 0 auto; }
+  .ag-filters { max-width: 1400px; margin: 0 auto; height: 0; position: relative; z-index: 20; display: flex; }
+  @media (max-width: 900px) { .ag-filters { height: auto; margin-bottom: 10px; } }
+  .ag-nav { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 14px; }
+  .ag-nav .ag-range { min-width: 210px; text-align: center; font-weight: 600; font-size: 15px; }
+  .ag-today { margin-left: 6px; }
+  .ag-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 14px; background: var(--surface); overflow: hidden; min-height: calc(100vh - var(--header-h) - 150px); }
+  .ag-day { border-left: 1px solid var(--border); display: flex; flex-direction: column; min-width: 0; }
+  .ag-day:first-child { border-left: 0; }
+  .ag-head { text-align: center; padding: 14px 6px 10px; }
+  .ag-dow { font-size: 12px; color: var(--muted); text-transform: lowercase; }
+  .ag-num { display: inline-grid; place-items: center; width: 44px; height: 44px; margin-top: 2px; border-radius: 50%; font-size: 24px; font-weight: 400; }
+  .ag-day.today .ag-dow { color: var(--primary); font-weight: 600; }
+  .ag-day.today .ag-num { background: var(--primary); color: #fff; }
+  .ag-list { display: flex; flex-direction: column; gap: 6px; padding: 4px 8px 12px; }
+  .ag-item { display: block; width: 100%; text-align: left; padding: 7px 9px; border: 1px solid var(--border); border-top: 4px solid var(--border); border-radius: 8px; background: var(--surface); color: inherit; font: inherit; cursor: pointer; }
+  .ag-item.due-late { border-top-color: var(--danger); }
+  .ag-item.due-soon { border-top-color: var(--warn); }
+  .ag-item.due-ok { border-top-color: #22a06b; }
+  .ag-item:hover { background: var(--hover); }
+  .ag-item { cursor: grab; user-select: none; -webkit-user-select: none; }
+  .ag-item.ag-src { opacity: .3; }
+  .ag-ghost { position: fixed; left: 0; top: 0; z-index: 400; pointer-events: none; margin: 0; cursor: grabbing; box-shadow: 0 14px 30px rgba(16,24,40,.28); transform-origin: 0 0; transition: none; background: var(--surface); }
+  .ag-day { transition: background .12s; }
+  .ag-day.ag-drop { background: var(--primary-soft); box-shadow: inset 0 0 0 2px var(--primary); }
+  .ag-nav [data-ag].ag-hot { background: var(--primary); color: #fff; border-color: var(--primary); }
+  body.ag-dragging, body.ag-dragging * { cursor: grabbing !important; }
+  .ag-item b { display: block; font-size: 12.5px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .ag-item small { display: flex; align-items: center; gap: 5px; margin-top: 4px; font-size: 11.5px; color: var(--muted); }
+  .ag-item small .dot { width: 7px; height: 7px; }
+  .ag-item.done { opacity: .55; }
+  .ag-item.done b { text-decoration: line-through; }
+  .ag-item .avatars { margin-left: auto; }
+  .ag-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 14px; align-items: stretch; }
+  .ag-side { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); min-width: 0; transition: background .12s; }
+  .ag-side.ag-drop { background: var(--primary-soft); box-shadow: inset 0 0 0 2px var(--primary); }
+  .ag-side-head { padding: 14px 12px 8px; font-weight: 700; font-size: 13.5px; display: flex; align-items: center; gap: 6px; }
+  .ag-side-head .count { margin-left: auto; }
+  .ag-side-sub { padding: 0 12px 8px; font-size: 11.5px; color: var(--muted); }
+  .ag-side .ag-list { overflow-y: auto; max-height: calc(100vh - var(--header-h) - 230px); }
+  .ag-late { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; padding: 10px 12px; border: 1px solid rgba(229,72,77,.35); border-radius: 12px; background: rgba(229,72,77,.07); }
+  .ag-late-t { font-size: 12.5px; font-weight: 700; color: var(--danger); margin-right: 4px; }
+  .ag-late .ag-item { width: auto; max-width: 240px; border-color: rgba(229,72,77,.35); }
+  .ag-late .ag-item small { color: var(--danger); }
+  .ag-mine { margin-left: 10px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; user-select: none; }
+  .ag-mine input { width: auto; accent-color: var(--primary); }
+  @media (max-width: 1000px) { .ag-wrap { grid-template-columns: 1fr; } .ag-side .ag-list { max-height: 260px; } }
+  .ag-foot { margin-top: 10px; font-size: 12.5px; color: var(--muted); text-align: center; }
+  .ag-foot button { border: 0; background: none; padding: 0; font: inherit; color: var(--primary); cursor: pointer; }
+  @media (max-width: 760px) {
+    .ag-grid { grid-template-columns: 1fr; min-height: 0; }
+    .ag-day { border-left: 0; border-top: 1px solid var(--border); flex-direction: row; align-items: flex-start; }
+    .ag-day:first-child { border-top: 0; }
+    .ag-head { width: 64px; flex: none; }
+    .ag-num { width: 36px; height: 36px; font-size: 18px; }
+    .ag-list { flex: 1; padding: 10px 10px 10px 0; }
+  }
+  .app-foot { padding: 0 24px 8px; text-align: left; font-size: 11px; line-height: 1.4; color: var(--muted); opacity: .6; }
+  .test-strip { position: fixed; top: 0; left: 0; right: 0; height: 26px; z-index: 70; display: flex; align-items: center; justify-content: center; padding: 0 12px; background: #f76b15; color: #fff; font-size: 12.5px; font-weight: 700; letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  body.is-test { padding-top: calc(var(--header-h) + 26px); }
+  body.is-test .app-header { top: 26px; }
   #view-projects, #view-settings { max-width: 1400px; margin: 0 auto; }
 
   /* ---------- Barra de ferramentas e filtros ---------- */
@@ -845,7 +908,7 @@
   </div>
   <nav class="tabs" role="tablist">
     <button class="tab" role="tab" data-tab="projects">Projetos</button>
-    <button class="tab" role="tab" data-tab="board">Board</button>
+    <button class="tab" role="tab" data-tab="board">Agenda</button>
     <button class="tab" role="tab" data-tab="stats">Estatísticas</button>
     <button class="tab" role="tab" data-tab="settings">Configurações</button>
   </nav>
@@ -872,7 +935,9 @@
   </section>
 
   <section id="view-board" class="view" hidden>
-    <div class="board" id="board"></div>
+    <div class="board" id="board" hidden></div>
+    <div class="ag-filters" id="agFilterSlot"></div>
+    <div class="agenda" id="agenda"></div>
   </section>
 
   <section id="view-stats" class="view" hidden>
@@ -883,6 +948,7 @@
     <div class="settings-grid" id="settings"></div>
   </section>
 </main>
+<footer class="app-foot"><span id="verTxt"></span> · Developed by Israel Braz</footer>
 
 <!-- Modal do projeto -->
 <div id="modal" class="backdrop" hidden>
@@ -1215,9 +1281,22 @@
   /* Dados que vão para o GitHub (iguais em todo aparelho) e preferências deste aparelho */
   var SHARED_KEYS = ['version', 'title', 'priorities', 'statuses', 'types', 'collaborators', 'projects', 'sort'];
   var LOCAL_KEYS = ['theme', 'tab', 'filters', 'statsScope', 'collapsed'];
-  var CACHE_KEY = 'steincorpProjetos.cache.v1';
-  var PREFS_KEY = 'steincorpProjetos.prefs.v1';
-  var GH_KEY = 'steincorpProjetos.github.v1';
+  /* O mesmo arquivo roda no site oficial e no de teste: cada um usa nomes e dados próprios */
+  var SITE_DIR = (location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase();
+  var IS_PROD = SITE_DIR === 'steincorp-projetos';
+  var KP = IS_PROD ? 'steincorpProjetos.' : 'gestorProjetos.';
+  var DEFAULT_DATA_REPO = IS_PROD ? 'steincorp-dados' : 'gestor-dados';
+  var CACHE_KEY = KP + 'cache.v1';
+  var PREFS_KEY = KP + 'prefs.v1';
+  var GH_KEY = KP + 'github.v1';
+  if (!IS_PROD) {
+    document.body.classList.add('is-test');
+    var strip = document.createElement('div');
+    strip.className = 'test-strip';
+    strip.textContent = 'AMBIENTE DE TESTE · as mudanças aqui não afetam o gestor oficial da SteinCorp';
+    document.body.insertBefore(strip, document.body.firstChild);
+    document.title = '[TESTE] ' + document.title;
+  }
   var DATA_FILE = 'dados.json';
 
   function pick(obj, keys) {
@@ -1480,7 +1559,7 @@
     purgeRefs();
     takeSnap();
     writeLocal(CACHE_KEY, pick(state, SHARED_KEYS));
-    if (document.activeElement !== appTitle) { appTitle.textContent = state.title; document.title = state.title; }
+    if (document.activeElement !== appTitle) { appTitle.textContent = state.title; document.title = (IS_PROD ? '' : '[TESTE] ') + state.title; }
     refreshData();
     if (!settingsEl.contains(document.activeElement)) renderSettings();
   }
@@ -1586,6 +1665,13 @@
   }
   /* Regra aplicada sempre que um projeto muda de status */
   /* Status "Concluído" (qualquer status cujo nome comece com Conclu) */
+  /* "Em aberto" = em andamento, em revisão ou em conferência */
+  function isOpenStatus(statusId) {
+    var s = byId(state.statuses, statusId);
+    if (!s) return false;
+    var n = norm(s.name);
+    return n.indexOf('andamento') >= 0 || n.indexOf('revis') >= 0 || n.indexOf('confer') >= 0;
+  }
   function isDoneStatus(statusId) {
     var s = byId(state.statuses, statusId);
     return !!s && norm(s.name).indexOf('conclu') >= 0;
@@ -1691,9 +1777,10 @@
      Título, tema e abas
      ========================================================= */
   function setTitleFromEl() {
+    if (!isAdmin()) return;
     var t = appTitle.textContent.replace(/\s+/g, ' ').trim();
     state.title = t || DEFAULT_TITLE;
-    document.title = state.title;
+    document.title = (IS_PROD ? '' : '[TESTE] ') + state.title;
     save();
   }
   appTitle.addEventListener('input', setTitleFromEl);
@@ -1732,6 +1819,10 @@
     var adm = isAdmin();
     var setTab = $('.tab[data-tab="settings"]');
     if (setTab) setTab.hidden = !adm;
+    /* só administradores podem renomear o gestor */
+    appTitle.setAttribute('contenteditable', adm ? 'true' : 'false');
+    appTitle.title = adm ? 'Clique para editar o título' : '';
+    if (!adm && document.activeElement === appTitle) appTitle.blur();
     if (!adm && state.tab === 'settings') state.tab = 'projects';
     renderUserBtn(); renderBell();
     $$('.tab').forEach(function (b) {
@@ -1740,6 +1831,10 @@
       b.setAttribute('aria-selected', on ? 'true' : 'false');
     });
     $$('.view').forEach(function (v) { v.hidden = v.id !== 'view-' + state.tab; });
+    /* o mesmo filtro aparece na Agenda */
+    var slot = state.tab === 'board' ? $('#agFilterSlot') : $('#resultCount');
+    if (state.tab === 'board') { if (filtersEl.parentNode !== slot) slot.appendChild(filtersEl); }
+    else if (filtersEl.nextElementSibling !== slot) slot.parentNode.insertBefore(filtersEl, slot);
   }
   $$('.tab').forEach(function (b) {
     b.addEventListener('click', function () {
@@ -1822,6 +1917,9 @@
     var hay = [p.name, p.desc, p.client, p.location, p.notes, t && t.name, s && s.name, pr && pr.name].concat(names).join(' ');
     return norm(hay).indexOf(q) >= 0;
   }
+  function passAllFilters(p) {
+    return passFilter('resp', p.responsibles) && passFilter('priority', p.priorityId) && passFilter('type', p.typeIds);
+  }
   function filteredProjects() {
     var q = norm(ui.search.trim());
     return state.projects.filter(function (p) {
@@ -1862,7 +1960,7 @@
     filtersEl.innerHTML = html;
   }
 
-  function commitFilters() { save(); renderFilters(); renderTable(); }
+  function commitFilters() { save(); renderFilters(); renderTable(); renderBoard(); }
 
   filtersEl.addEventListener('click', function (e) {
     var b = e.target.closest('[data-f]');
@@ -2208,22 +2306,164 @@
       '</div>';
   }
 
-  function renderBoard() {
-    var cols = state.statuses.map(function (s) { return { id: s.id, name: s.name, color: s.color }; });
-    var orphans = state.projects.filter(function (p) { return !byId(state.statuses, p.statusId); });
-    if (orphans.length || !cols.length) cols.push({ id: '', name: 'Sem status', color: '#8b95a7' });
-    boardEl.innerHTML = cols.map(function (c) {
-      var items = c.id
-        ? state.projects.filter(function (p) { return p.statusId === c.id; })
-        : orphans;
-      return '<div class="col" data-status="' + esc(c.id) + '">' +
-        '<div class="col-head" style="--c:' + esc(c.color) + '"><span class="dot" style="background:' + esc(c.color) + '"></span>' +
-        '<span class="col-title" title="' + esc(c.name) + '">' + esc(c.name) + '</span><span class="count">' + items.length + '</span>' +
-        '<button type="button" class="icon-btn sm" data-add="' + esc(c.id) + '" title="Novo projeto em ' + esc(c.name) + '">+</button></div>' +
-        '<div class="col-list">' + (items.length ? items.map(cardHTML).join('') : '<div class="col-empty">Arraste projetos para cá</div>') + '</div>' +
-        '</div>';
-    }).join('');
+  /* ---------- Agenda semanal (no lugar do Board) ---------- */
+  var agendaEl = $('#agenda');
+  var agendaWeek = 0;
+  var DOW = ['dom.', 'seg.', 'ter.', 'qua.', 'qui.', 'sex.', 'sáb.'];
+  var MES = ['jan.', 'fev.', 'mar.', 'abr.', 'mai.', 'jun.', 'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.'];
+  function isoDay(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  var agMine = !!readLocal(KP + 'agMine.v1');
+  function agMineOk(p) { var me = currentUser(); return !agMine || !me || p.responsibles.indexOf(me) >= 0; }
+  function agDueClass(p) {
+    if (isDone(p) || !p.deadline) return 'due-none';
+    var d = daysUntil(p.deadline);
+    if (d === null) return 'due-none';
+    return d <= 0 ? 'due-late' : (d <= 2 ? 'due-soon' : 'due-ok');
   }
+  function agItemHTML(p, note) {
+    var st = byId(state.statuses, p.statusId);
+    return '<button type="button" class="ag-item ' + agDueClass(p) + (isDone(p) ? ' done' : '') + '" data-open="' + esc(p.id) + '" title="' + esc(p.name) + '">' +
+      '<b>' + esc(p.name) + '</b><small>' + (note ? esc(note) : (st ? '<span class="dot" style="background:' + esc(st.color) + '"></span>' + esc(st.name) : 'Sem status')) +
+      avatarsHTML(p.responsibles, false) + '</small></button>';
+  }
+  function renderBoard() {
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var start = new Date(today); start.setDate(today.getDate() - today.getDay() + agendaWeek * 7);
+    var days = [];
+    for (var i = 0; i < 7; i++) { var d = new Date(start); d.setDate(start.getDate() + i); days.push(d); }
+    var end = days[6];
+    var range = MES[start.getMonth()] + ' ' + start.getDate() + ' - ' + MES[end.getMonth()] + ' ' + end.getDate() + ', ' + end.getFullYear();
+    var todayIso = isoDay(today);
+    var shown = 0;
+    var cols = days.map(function (d, i) {
+      var iso = isoDay(d);
+      var items = state.projects.filter(function (p) { return p.deadline === iso && agMineOk(p) && passAllFilters(p); })
+        .sort(function (a, b) { return (isDone(a) ? 1 : 0) - (isDone(b) ? 1 : 0) || collator.compare(a.name, b.name); });
+      shown += items.length;
+      return '<div class="ag-day' + (iso === todayIso ? ' today' : '') + '" data-day="' + iso + '">' +
+        '<div class="ag-head"><div class="ag-dow">' + DOW[i] + '</div><div class="ag-num">' + d.getDate() + '</div></div>' +
+        '<div class="ag-list">' + items.map(function (p) { return agItemHTML(p); }).join('') + '</div></div>';
+    }).join('');
+    var me = currentUser();
+    agendaEl.innerHTML = '<div class="ag-nav">' +
+      '<button type="button" class="icon-btn" data-ag="-1" title="Semana anterior" aria-label="Semana anterior">‹</button>' +
+      '<span class="ag-range">' + range + '</span>' +
+      '<button type="button" class="icon-btn" data-ag="1" title="Próxima semana" aria-label="Próxima semana">›</button>' +
+      (agendaWeek !== 0 ? '<button type="button" class="btn sm ag-today" data-ag="0">Hoje</button>' : '') +
+      (me ? '<label class="ag-mine"><input type="checkbox" id="agMine"' + (agMine ? ' checked' : '') + '> Só os meus</label>' : '') +
+      '</div>' +
+      '<div class="ag-grid">' + cols + '</div>' +
+      (!shown ? '<div class="ag-foot">Nenhum projeto com prazo nesta semana.</div>' : '');
+  }
+  /* Arrastar um projeto para outro dia muda o prazo */
+  var agDrag = null, agSuppressClick = false;
+  agendaEl.addEventListener('pointerdown', function (e) {
+    var it = e.target.closest('.ag-item');
+    if (!it || e.button !== 0) return;
+    var r = it.getBoundingClientRect();
+    agDrag = { el: it, id: it.dataset.open, pid: e.pointerId, x0: e.clientX, y0: e.clientY, dx: e.clientX - r.left, dy: e.clientY - r.top,
+      w: r.width, active: false, touch: e.pointerType !== 'mouse', ghost: null, day: null, hot: null, hotTimer: null, holdTimer: null };
+    if (agDrag.touch) {
+      agDrag.holdTimer = setTimeout(function () { if (agDrag && !agDrag.active) startAgDrag(agDrag.x0, agDrag.y0); }, 280);
+    }
+  });
+  function startAgDrag(x, y) {
+    var d = agDrag;
+    d.active = true;
+    var g = d.el.cloneNode(true);
+    g.classList.add('ag-ghost');
+    g.style.width = d.w + 'px';
+    document.body.appendChild(g);
+    d.ghost = g;
+    d.el.classList.add('ag-src');
+    document.body.classList.add('ag-dragging');
+    moveAgGhost(x, y);
+  }
+  function moveAgGhost(x, y) {
+    var d = agDrag;
+    d.ghost.style.transform = 'translate(' + (x - d.dx) + 'px,' + (y - d.dy) + 'px) rotate(2deg) scale(1.03)';
+    var under = document.elementFromPoint(x, y);
+    var day = under && under.closest ? under.closest('.ag-day') : null;
+    if (day !== d.day) {
+      if (d.day) d.day.classList.remove('ag-drop');
+      d.day = day;
+      if (day) day.classList.add('ag-drop');
+    }
+    var nav = under && under.closest ? under.closest('.ag-nav [data-ag="-1"], .ag-nav [data-ag="1"]') : null;
+    if (nav !== d.hot) {
+      if (d.hot) d.hot.classList.remove('ag-hot');
+      clearInterval(d.hotTimer);
+      d.hot = nav;
+      if (nav) {
+        nav.classList.add('ag-hot');
+        var step = Number(nav.dataset.ag);
+        d.hotTimer = setInterval(function () {
+          agendaWeek += step; renderBoard();
+          var src = $$('.ag-item', agendaEl).filter(function (x) { return x.dataset.open === d.id; })[0];
+          if (src) { src.classList.add('ag-src'); d.el = src; }
+          d.hot = null; d.day = null;
+          var nn = $('.ag-nav [data-ag="' + step + '"]', agendaEl);
+          if (nn) { nn.classList.add('ag-hot'); d.hot = nn; }
+        }, 700);
+      }
+    }
+  }
+  document.addEventListener('pointermove', function (e) {
+    var d = agDrag;
+    if (!d || e.pointerId !== d.pid) return;
+    var dist = Math.abs(e.clientX - d.x0) + Math.abs(e.clientY - d.y0);
+    if (!d.active) {
+      if (d.touch) { if (dist > 8) { clearTimeout(d.holdTimer); agDrag = null; } return; }
+      if (dist < 5) return;
+      startAgDrag(e.clientX, e.clientY);
+    }
+    e.preventDefault();
+    moveAgGhost(e.clientX, e.clientY);
+  }, { passive: false });
+  document.addEventListener('touchmove', function (e) { if (agDrag && agDrag.active) e.preventDefault(); }, { passive: false });
+  function endAgDrag(drop) {
+    var d = agDrag;
+    agDrag = null;
+    if (!d) return;
+    clearTimeout(d.holdTimer); clearInterval(d.hotTimer);
+    if (!d.active) return;
+    agSuppressClick = true;
+    setTimeout(function () { agSuppressClick = false; }, 50);
+    document.body.classList.remove('ag-dragging');
+    if (d.hot) d.hot.classList.remove('ag-hot');
+    var p = byId(state.projects, d.id);
+    var target = drop && d.day ? d.day.dataset.day : null;
+    if (d.day) d.day.classList.remove('ag-drop');
+    if (p && target !== null && target !== undefined && target !== p.deadline) {
+      var r = d.day.querySelector('.ag-list').getBoundingClientRect();
+      d.ghost.style.transition = 'transform .15s ease, opacity .15s ease';
+      d.ghost.style.transform = 'translate(' + (r.left + 8) + 'px,' + (r.top + 4) + 'px) rotate(0) scale(1)';
+      d.ghost.style.opacity = '0';
+      setTimeout(function () { d.ghost.remove(); }, 160);
+      p.deadline = target;
+      save(); refreshData();
+      var parts = target.split('-');
+      toast(target ? 'Prazo de ' + p.name + ' mudou para ' + parts[2] + '/' + parts[1] + '/' + parts[0] + '.' : 'Prazo de ' + p.name + ' removido.');
+    } else {
+      d.ghost.remove();
+      d.el.classList.remove('ag-src');
+    }
+  }
+  document.addEventListener('pointerup', function (e) { if (agDrag && e.pointerId === agDrag.pid) endAgDrag(true); });
+  document.addEventListener('pointercancel', function (e) { if (agDrag && e.pointerId === agDrag.pid) endAgDrag(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && agDrag && agDrag.active) endAgDrag(false); });
+  agendaEl.addEventListener('contextmenu', function (e) { if (agDrag) e.preventDefault(); });
+
+  agendaEl.addEventListener('change', function (e) {
+    if (e.target.id === 'agMine') { agMine = e.target.checked; writeLocal(KP + 'agMine.v1', agMine); renderBoard(); }
+  });
+  agendaEl.addEventListener('click', function (e) {
+    if (agSuppressClick) { e.preventDefault(); return; }
+    var nav = e.target.closest('[data-ag]');
+    if (nav) { var v = Number(nav.dataset.ag); agendaWeek = v === 0 ? 0 : agendaWeek + v; renderBoard(); return; }
+    var it = e.target.closest('[data-open]');
+    if (it) openProject(it.dataset.open);
+  });
 
   boardEl.addEventListener('click', function (e) {
     var add = e.target.closest('[data-add]');
@@ -2478,7 +2718,7 @@
       '<form class="gh-form" id="ghForm" autocomplete="off">' +
       '<div class="add-row">' +
       '<label style="flex:1">Usuário do GitHub<input class="input" id="gh-owner" value="' + esc(c.owner || (site ? site.owner : '')) + '" placeholder="ex.: israelbraz" spellcheck="false"></label>' +
-      '<label style="flex:1">Repositório de dados<input class="input" id="gh-repo" value="' + esc(c.repo || 'steincorp-dados') + '" spellcheck="false"></label>' +
+      '<label style="flex:1">Repositório de dados<input class="input" id="gh-repo" value="' + esc(c.repo || DEFAULT_DATA_REPO) + '" spellcheck="false"></label>' +
       '</div>' +
       '<label>Chave de acesso (token)<input class="input" id="gh-token" type="password" placeholder="github_pat_..." spellcheck="false" autocomplete="off"></label>' +
       (site
@@ -3304,7 +3544,7 @@
   }
 
   /* O que cada usuário já viu (guardado neste aparelho) */
-  function seenKey() { return 'steincorpProjetos.seen.' + (currentUser() || '_'); }
+  function seenKey() { return KP + 'seen.' + (currentUser() || '_'); }
   function seenMap() {
     var m = readLocal(seenKey());
     if (!m || typeof m !== 'object') { m = { since: nowISO(), p: {} }; writeLocal(seenKey(), m); }
@@ -3780,10 +4020,11 @@
   function renderStats() {
     var scope = state.statsScope === 'all' ? 'all' : 'open';
     var all = state.projects;
-    var openAll = all.filter(function (p) { return !isDoneStatus(p.statusId); });
+    var openAll = all.filter(function (p) { return isOpenStatus(p.statusId); });
     var list = scope === 'all' ? all : openAll;
     var showDone = scope === 'all';
-    var doneCount = all.length - openAll.length;
+    var doneCount = all.filter(function (p) { return isDoneStatus(p.statusId); }).length;
+    var waitCount = all.length - openAll.length - doneCount;
 
     var late = openAll.filter(function (p) { var d = daysUntil(p.deadline); return d !== null && d < 0; });
     var soon = openAll.filter(function (p) { var d = daysUntil(p.deadline); return d !== null && d >= 0 && d <= 7; });
@@ -3793,14 +4034,14 @@
     var avg = avgProgress(list);
 
     var html = '<div class="st-head"><div><h2>Estatísticas</h2><p>' +
-      (scope === 'all' ? 'Todos os ' + all.length + ' projetos, incluindo os concluídos.' : 'Só os ' + openAll.length + ' projetos abertos (sem os concluídos).') +
+      (scope === 'all' ? 'Todos os ' + all.length + ' projetos, incluindo os concluídos.' : 'Só os ' + openAll.length + ' projetos em aberto (em andamento, em revisão e em conferência).') +
       '</p></div>' +
       '<div class="seg" style="width:260px"><button type="button" data-scope="open" class="' + (scope === 'open' ? 'on' : '') + '">Só abertos</button>' +
       '<button type="button" data-scope="all" class="' + (scope === 'all' ? 'on' : '') + '">Todos</button></div></div>';
 
     // Resumo
     html += '<div class="kpis">' +
-      '<div class="kpi"><div class="kpi-label">Projetos</div><div class="kpi-value">' + list.length + '</div><div class="kpi-sub">' + openAll.length + ' abertos · ' + doneCount + ' concluídos</div></div>' +
+      '<div class="kpi"><div class="kpi-label">Projetos</div><div class="kpi-value">' + list.length + '</div><div class="kpi-sub">' + openAll.length + ' em aberto · ' + waitCount + ' aguardando · ' + doneCount + ' concluídos</div></div>' +
       '<div class="kpi"><div class="kpi-label">Andamento médio</div><div class="kpi-value">' + avg + '%</div>' + progHTML(avg) + '</div>' +
       '<div class="kpi' + (late.length ? ' alert' : '') + '"><div class="kpi-label">Atrasados</div><div class="kpi-value">' + late.length + '</div><div class="kpi-sub">projetos abertos com prazo vencido</div></div>' +
       '<div class="kpi' + (soon.length ? ' warn' : '') + '"><div class="kpi-label">Vencem em 7 dias</div><div class="kpi-value">' + soon.length + '</div><div class="kpi-sub">projetos abertos</div></div>' +
@@ -3808,7 +4049,7 @@
 
     if (!list.length) {
       statsEl.innerHTML = html + '<div class="empty"><strong>Nenhum projeto aqui</strong>' +
-        (scope === 'open' ? 'Todos os projetos estão concluídos. Clique em "Todos" para ver o histórico.' : 'Crie projetos para ver as estatísticas.') + '</div>';
+        (scope === 'open' ? 'Nenhum projeto em andamento, em revisão ou em conferência. Clique em "Todos" para ver o resto.' : 'Crie projetos para ver as estatísticas.') + '</div>';
       return;
     }
 
@@ -3822,7 +4063,7 @@
       '</div></div>';
 
     // Por status
-    var statusItems = scope === 'open' ? state.statuses.filter(function (s) { return !isDoneStatus(s.id); }) : state.statuses;
+    var statusItems = scope === 'open' ? state.statuses.filter(function (s) { return isOpenStatus(s.id); }) : state.statuses;
     html += '<div class="st-card"><h3>Por status</h3><p class="sub">Em que etapa os projetos estão, na ordem das suas caixas.</p><div class="bars">' +
       breakdown(list, statusItems, 'statusId', 'status', false) + '</div></div>';
 
@@ -3833,7 +4074,7 @@
 
     // Por prioridade
     var top = state.priorities[0];
-    var parked = top ? openAll.filter(function (p) {
+    var parked = top ? all.filter(function (p) {
       if (p.priorityId !== top.id) return false;
       var st = byId(state.statuses, p.statusId);
       if (!st) return true;
@@ -3850,7 +4091,7 @@
     // Por responsável
     var people = state.collaborators.map(function (c) {
       var mine = list.filter(function (p) { return p.responsibles.indexOf(c.id) >= 0; });
-      var mineOpen = mine.filter(function (p) { return !isDoneStatus(p.statusId); });
+      var mineOpen = mine.filter(function (p) { return isOpenStatus(p.statusId); });
       var lateN = mineOpen.filter(function (p) { var d = daysUntil(p.deadline); return d !== null && d < 0; }).length;
       return { c: c, total: mine.length, open: mineOpen.length, avg: avgProgress(mine), late: lateN };
     });
@@ -3930,7 +4171,7 @@
   }
   function renderAll() {
     appTitle.textContent = state.title;
-    document.title = state.title;
+    document.title = (IS_PROD ? '' : '[TESTE] ') + state.title;
     applyTheme();
     showTab();
     refreshData();
@@ -3947,7 +4188,7 @@
       .map(function (u) { return '<option value="' + esc(u.id) + '">' + esc(u.name) + '</option>'; });
     if (keyFile && keyFile.lock) opts.push('<option value="">Senha da empresa</option>');
     sel.innerHTML = opts.join('');
-    var last = readLocal('steincorpProjetos.lastUser.v1');
+    var last = readLocal(KP + 'lastUser.v1');
     if (last && users[last]) sel.value = last;
     $('#unlockUserField').hidden = !hasUsers();
     $('#unlockIntro').textContent = hasUsers() ? 'Escolha seu nome e digite sua senha. Isso só é pedido uma vez em cada aparelho.' : 'Digite a senha da empresa. Isso só é pedido uma vez em cada aparelho.';
@@ -3982,7 +4223,7 @@
     }
     gh.cfg = { owner: keyFile.owner, repo: keyFile.repo, token: token, user: who || null };
     writeLocal(GH_KEY, gh.cfg);
-    if (who) writeLocal('steincorpProjetos.lastUser.v1', who);
+    if (who) writeLocal(KP + 'lastUser.v1', who);
     closeUnlock();
     showTab();
     if (who && (keyUsers()[who] || {}).mustChange) openAccount(true);
@@ -4058,6 +4299,10 @@
     if (r.ok) { accountForced = false; closeAccount(); toast('Senha trocada. Use a nova senha nos próximos acessos.'); }
     else { $('#accErr').textContent = 'Não consegui salvar agora. Tente de novo.'; $('#accErr').style.display = 'block'; }
   });
+
+  /* ---------- Versão ---------- */
+  var APP_VERSION = '2.5.0';
+  $('#verTxt').textContent = 'v' + APP_VERSION + (IS_PROD ? '' : '-teste');
 
   purgeRefs();
   takeSnap();
