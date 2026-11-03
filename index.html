@@ -415,6 +415,11 @@
   .cl-h span { font-size: 12px; color: var(--muted); }
   .cl-h .cl-now { font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); }
   .cl-ver ul { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.55; }
+  .test-strip .pull-prod { margin-left: 12px; flex: none; border: 1px solid rgba(255,255,255,.7); border-radius: 999px; background: rgba(255,255,255,.15); color: #fff; font: inherit; font-size: 11.5px; padding: 1px 10px; cursor: pointer; }
+  .test-strip .pull-prod:hover { background: rgba(255,255,255,.3); }
+  .test-strip .pull-prod:disabled { opacity: .6; cursor: default; }
+  .test-strip > span { overflow: hidden; text-overflow: ellipsis; }
+  @media (max-width: 700px) { .test-strip > span { display: none; } .test-strip .pull-prod { margin-left: 0; } }
   .test-strip { position: fixed; top: 0; left: 0; right: 0; height: 26px; z-index: 70; display: flex; align-items: center; justify-content: center; padding: 0 12px; background: #f76b15; color: #fff; font-size: 12.5px; font-weight: 700; letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   body.is-test { padding-top: calc(var(--header-h) + 26px); }
   body.is-test .app-header { top: 26px; }
@@ -1276,9 +1281,9 @@
      ========================================================= */
   var DEFAULT_TITLE = 'Gestor de Projetos';
   var PALETTE = [
-    '#e5484d', '#f76b15', '#f5a524', '#eab308', '#84cc16', '#30a46c',
-    '#14b8a6', '#0ea5e9', '#3b82f6', '#6366f1', '#6c5ce7', '#a855f7',
-    '#ec4899', '#b7791f', '#78716c', '#8b95a7', '#475569', '#1f2430'
+    '#ef1c1c', '#ff6a00', '#ff9f00', '#facc15', '#84cc16', '#16a34a',
+    '#14b8a6', '#06b6d4', '#0ea5e9', '#2563eb', '#4f46e5', '#7c3aed',
+    '#a21caf', '#db2777', '#ec4899', '#b8860b', '#8b4513', '#6b7280'
   ];
   var ICON = {
     grip: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>',
@@ -1325,6 +1330,33 @@
     var r = parseInt(h.slice(1, 3), 16), g = parseInt(h.slice(3, 5), 16), b = parseInt(h.slice(5, 7), 16);
     var lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
     return lum > 0.64 ? '#1a1d24' : '#ffffff';
+  }
+  /* Cor bem viva e aleatória, longe das cores que já existem na lista (usada nas disciplinas) */
+  function hslHex(h, sat, l) {
+    sat /= 100; l /= 100;
+    var k = function (n) { return (n + h / 30) % 12; }, a = sat * Math.min(l, 1 - l);
+    var f = function (n) { return Math.round(255 * (l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))))); };
+    return '#' + [f(0), f(8), f(4)].map(function (v) { return ('0' + v.toString(16)).slice(-2); }).join('');
+  }
+  function hueOf(hex) {
+    hex = toHex6(hex);
+    var r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
+    var mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+    if (d < 0.2) return null; /* cinzas não contam */
+    var h = mx === r ? ((g - b) / d) % 6 : (mx === g ? (b - r) / d + 2 : (r - g) / d + 4);
+    return (h * 60 + 360) % 360;
+  }
+  function vividColor(list) {
+    var hues = list.map(function (x) { return hueOf(x.color); }).filter(function (h) { return h !== null; });
+    var best = [], bestGap = -1;
+    for (var i = 0; i < 72; i++) {
+      var h = i * 5, gap = 360;
+      hues.forEach(function (u) { var dd = Math.abs(h - u); gap = Math.min(gap, Math.min(dd, 360 - dd)); });
+      if (gap > bestGap + 2) { best = [h]; bestGap = gap; } else if (Math.abs(gap - bestGap) <= 2) best.push(h);
+    }
+    var hue = best[Math.floor(Math.random() * best.length)];
+    var light = (hue >= 45 && hue <= 70) ? 48 : (hue > 70 && hue < 170 ? 40 : 50); /* amarelos e verdes um pouco mais escuros */
+    return hslHex(hue, 90, light);
   }
   function nextColor(list) {
     var used = {};
@@ -1464,8 +1496,8 @@
   }
 
   /* Dados que vão para o GitHub (iguais em todo aparelho) e preferências deste aparelho */
-  var SHARED_KEYS = ['version', 'title', 'priorities', 'statuses', 'types', 'collaborators', 'projects', 'sort', 'audit'];
-  var LOCAL_KEYS = ['theme', 'tab', 'filters', 'statsScope', 'collapsed'];
+  var SHARED_KEYS = ['version', 'title', 'priorities', 'statuses', 'types', 'collaborators', 'projects', 'audit'];
+  var LOCAL_KEYS = ['theme', 'tab', 'filters', 'statsScope', 'collapsed', 'sort']; /* a classificação das colunas é de cada usuário */
   /* O mesmo arquivo roda no site oficial e no de teste: cada um usa nomes e dados próprios */
   var SITE_DIR = (location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase();
   var IS_PROD = SITE_DIR === 'steincorp-projetos';
@@ -1478,7 +1510,8 @@
     document.body.classList.add('is-test');
     var strip = document.createElement('div');
     strip.className = 'test-strip';
-    strip.textContent = 'AMBIENTE DE TESTE · as mudanças aqui não afetam o gestor oficial da SteinCorp';
+    strip.innerHTML = '<span>AMBIENTE DE TESTE · as mudanças aqui não afetam o gestor oficial da SteinCorp</span>' +
+      '<button type="button" class="pull-prod" id="pullProd" title="Troca os dados do teste por uma cópia dos dados do gestor oficial">⟳ Puxar dados do oficial</button>';
     document.body.insertBefore(strip, document.body.firstChild);
     document.title = '[TESTE] ' + document.title;
   }
@@ -1686,6 +1719,43 @@
     return 'https://api.github.com/repos/' + encodeURIComponent(gh.cfg.owner) + '/' + encodeURIComponent(gh.cfg.repo);
   }
   function fileUrl() { return repoUrl() + '/contents/' + DATA_FILE; }
+
+  /* Só no TESTE: troca os dados do teste por uma cópia dos dados do oficial */
+  var PROD_DATA_REPO = 'steincorp-dados';
+  async function pullFromProd() {
+    if (IS_PROD) return;
+    if (!ghConfigured()) { toast('Entre no gestor de teste primeiro.'); return; }
+    var ok = await confirmBox('Puxar dados do oficial?', 'Os projetos, configurações e histórico do TESTE serão trocados por uma cópia do gestor oficial. O oficial não é alterado.', 'Puxar dados');
+    if (!ok) return;
+    var btn = $('#pullProd'); if (btn) { btn.disabled = true; btn.textContent = 'Copiando…'; }
+    try {
+      clearTimeout(gh.timer); gh.timer = null;
+      var src = await ghFetch('https://api.github.com/repos/' + encodeURIComponent(gh.cfg.owner) + '/' + PROD_DATA_REPO + '/contents/' + DATA_FILE);
+      if (src.status !== 200) {
+        toast(src.status === 404 || src.status === 403
+          ? 'A chave do teste não tem acesso ao repositório ' + PROD_DATA_REPO + '. Libere esse repositório na chave do GitHub.'
+          : 'Não consegui ler os dados do oficial (' + src.status + ').');
+        return;
+      }
+      var sj = await src.json();
+      var content = String(sj.content || '').replace(/\s+/g, '');
+      JSON.parse(fromBase64(content));
+      var cur = await ghFetch(fileUrl());
+      var body = { message: 'Teste: copia dados do oficial (' + new Date().toLocaleString('pt-BR') + ')', content: content };
+      if (cur.status === 200) body.sha = (await cur.json()).sha;
+      var put = await ghFetch(fileUrl(), 'PUT', body);
+      if (put.status !== 200 && put.status !== 201) { toast('Não consegui gravar no teste (' + put.status + '). Tente de novo.'); return; }
+      gh.conflict = false; gh.lastJSON = null;
+      await ghConnect(true);
+      renderSettings();
+      toast('Dados do oficial copiados para o teste.');
+    } catch (e) {
+      toast('Não foi possível copiar agora. Confira a internet e tente de novo.');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '⟳ Puxar dados do oficial'; }
+    }
+  }
+  if (!IS_PROD) document.addEventListener('click', function (e) { if (e.target.closest('#pullProd')) pullFromProd(); });
 
   function errorText(status) {
     if (status === 401) return 'A chave de acesso é inválida ou venceu. Gere uma nova no GitHub e cole aqui.';
@@ -3439,7 +3509,7 @@
       var input = f.querySelector('input');
       var name = input.value.trim();
       if (!name) { input.focus(); return; }
-      var novo = { id: uid(), name: name, color: nextColor(state[key]) };
+      var novo = { id: uid(), name: name, color: key === 'types' ? vividColor(state[key]) : nextColor(state[key]) };
       if (key === 'statuses') novo.clearPriority = false;
       state[key].push(novo);
       save(); renderSettings(); refreshData();
@@ -4939,9 +5009,13 @@
   });
 
   /* ---------- Versão ---------- */
-  var APP_VERSION = '2.13.1';
+  var APP_VERSION = '2.14.1';
   /* Histórico de versões: acrescentar a nova versão no topo a cada lançamento */
   var CHANGELOG = [
+    { v: '2.14.1', d: '03/11/2026', items: ['Cores sugeridas no seletor de cor trocadas por cores vivas.'] },
+    { v: '2.14.0', d: '03/11/2026', items: ['Nova disciplina já vem com uma cor bem viva e aleatória, diferente das que já existem.'] },
+    { v: '2.13.3', d: '03/11/2026', items: ['Só no teste: botão "Puxar dados do oficial" na faixa laranja.'] },
+    { v: '2.13.2', d: '03/11/2026', items: ['Classificar pelas colunas (Projeto, Prioridade, Prazo…) agora vale só para quem clicou, sem mudar a tela dos outros.'] },
     { v: '2.13.1', d: '28/10/2026', items: ['Filtro de colaborador segue as colunas: nos projetos em conferência conta só o conferente; nas outras caixas, os responsáveis.'] },
     { v: '2.13.0', d: '28/10/2026', items: ['Na caixa Conferência, a coluna Responsável virou Conferente: mostra quem confere e permite trocar com um clique.', 'No filtro de colaborador, quem é conferente também vê os projetos que estão em conferência com ele.'] },
     { v: '2.12.0', d: '28/10/2026', items: ['Administrador pode apagar mensagens e linhas do histórico do projeto (ícone de lixeira ao passar o mouse).', 'Cada exclusão fica registrada no Histórico de atividades.'] },
