@@ -181,8 +181,8 @@
   }
   .talk-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border-radius: 10px; background: var(--primary-soft); }
   .talk-actions .t { flex: 1; min-width: 180px; font-size: 13px; font-weight: 600; }
-  .talk .btn.btn-ok { background: #22a06b; border-color: #22a06b; color: #fff; }
-  .talk .btn.btn-ok:hover { filter: brightness(1.05); background: #22a06b; }
+  .talk .btn.btn-ok, .modal-foot .btn.btn-ok { background: #22a06b; border-color: #22a06b; color: #fff; }
+  .talk .btn.btn-ok:hover, .modal-foot .btn.btn-ok:hover { filter: brightness(1.05); background: #22a06b; }
   .ret-form { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; }
   .ret-form textarea { min-height: 80px; }
   .ret-form .row2 { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -1178,6 +1178,7 @@
     <div class="modal-foot">
       <button type="button" class="btn btn-danger" id="deleteBtn">Excluir</button>
       <div class="spacer"></div>
+      <button type="button" class="btn btn-ok" id="sendConfBtn" hidden>Enviar para conferência</button>
       <button type="button" class="btn" data-close>Cancelar</button>
       <button type="submit" class="btn btn-primary">Salvar</button>
     </div>
@@ -4239,6 +4240,11 @@
     fStatus.value = p.statusId;
     if (fPriority && byId(state.priorities, p.priorityId) !== undefined) fPriority.value = p.priorityId;
     $('#f-progress').value = p.progress; $('#f-progress-range').value = p.progress; paintRange($('#f-progress-range'));
+    updateSendConfBtn();
+  }
+  /* Botão "Enviar para conferência": só em projeto já criado, fora de conferência e não concluído */
+  function updateSendConfBtn() {
+    $('#sendConfBtn').hidden = !editingId || !confStatusId() || isConfStatus(fStatus.value) || isDoneStatus(fStatus.value);
   }
   function renderTalk() {
     var box = $('#talkBox');
@@ -4468,6 +4474,7 @@
     renderResp();
     nameField.classList.remove('invalid');
     deleteBtn.hidden = !p;
+    updateSendConfBtn();
     downOnBackdrop = false;
     closePop();
     ui.openFilter = null; renderFilters();
@@ -4553,6 +4560,21 @@
   fStatus.addEventListener('change', function () {
     if (clearsPriority(fStatus.value)) fPriority.value = noPriorityId();
     if (isDoneStatus(fStatus.value)) { $('#f-progress').value = 100; $('#f-progress-range').value = 100; paintRange($('#f-progress-range')); }
+    updateSendConfBtn();
+  });
+  /* Salva a ficha como está (inclusive o conferente escolhido) já com o status de conferência.
+     O histórico e o aviso no sininho saem pelo mesmo caminho de sempre (logChanges). */
+  $('#sendConfBtn').addEventListener('click', function () {
+    var prevStatus = fStatus.value, prevPriority = fPriority.value;
+    var checker = $('#f-checker').value;
+    fStatus.value = confStatusId();
+    if (clearsPriority(fStatus.value)) fPriority.value = noPriorityId();
+    form.requestSubmit();
+    if (!modalEl.hidden) { /* faltou número ou título: nada foi salvo, volta como estava */
+      fStatus.value = prevStatus; fPriority.value = prevPriority;
+      return;
+    }
+    toast(checker ? 'Enviado para ' + whoName(checker) + ' conferir.' : 'Enviado para conferência. Sem conferente definido, ninguém foi avisado.');
   });
   $$('[data-close]', modalEl).forEach(function (b) { b.addEventListener('click', closeModal); });
   modalEl.addEventListener('pointerdown', function (e) { downOnBackdrop = e.target === modalEl; });
@@ -5013,9 +5035,10 @@
   });
 
   /* ---------- Versão ---------- */
-  var APP_VERSION = '2.14.3';
+  var APP_VERSION = '2.15.0';
   /* Histórico de versões: acrescentar a nova versão no topo a cada lançamento */
   var CHANGELOG = [
+    { v: '2.15.0', d: '03/11/2026', items: ['Botão "Enviar para conferência" dentro do projeto: salva a ficha e move para a conferência sem precisar arrastar. O conferente é avisado no sininho.'] },
     { v: '2.14.3', d: '03/11/2026', items: ['Minha conta no teste explica que a troca de senha é feita no gestor oficial.'] },
     { v: '2.14.2', d: '03/11/2026', items: ['Corrigido: clicar no seu nome abria a tela de "primeiro acesso" sem como fechar. Agora abre Minha conta, com Fechar, Sair e troca de senha opcional (fecha também com Esc ou clicando fora).'] },
     { v: '2.14.1', d: '03/11/2026', items: ['Cores sugeridas no seletor de cor trocadas por cores vivas.'] },
