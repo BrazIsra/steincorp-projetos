@@ -3899,7 +3899,7 @@
   /* para ações fora dos dados (usuários e senhas) */
   function auditNow(k, txt) { audit(k, txt); save(); if (state.tab === 'settings') renderAuditList(); }
 
-  var snap = {}, fullSnap = {}, cfgSnap = null, logTimer = null, skipStatusLog = {}, restoredIds = {};
+  var snap = {}, fullSnap = {}, cfgSnap = null, logTimer = null, logPending = false, skipStatusLog = {}, restoredIds = {};
   var AUDIT_LISTS = [['priorities', 'a prioridade'], ['statuses', 'o status'], ['types', 'a disciplina'], ['collaborators', 'o usuário']];
   function cfgOf() {
     var o = { title: state.title };
@@ -3940,7 +3940,8 @@
   }
   function scheduleLog() {
     clearTimeout(logTimer);
-    logTimer = setTimeout(function () { if (logChanges()) save(); }, 900);
+    logPending = true;
+    logTimer = setTimeout(function () { logPending = false; if (logChanges()) save(); }, 900);
   }
   function nameIn(list, id, empty) { var x = byId(list, id); return x ? x.name : empty; }
   function fmtDate(d) { if (!d) return ''; var a = d.split('-'); return a.length === 3 ? a[2] + '/' + a[1] + '/' + a[0] : d; }
@@ -5037,9 +5038,10 @@
   });
 
   /* ---------- Versão ---------- */
-  var APP_VERSION = '2.15.1';
+  var APP_VERSION = '2.16.0';
   /* Histórico de versões: acrescentar a nova versão no topo a cada lançamento */
   var CHANGELOG = [
+    { v: '2.16.0', d: '10/11/2026', items: ['O gestor se atualiza sozinho quando sai uma versão nova: confere de 5 em 5 minutos e recarrega só quando é seguro (nenhuma janela aberta, nada sendo digitado e tudo salvo).'] },
     { v: '2.15.1', d: '10/11/2026', items: ['Na ficha do projeto, a lista de Responsáveis agora abre para cima, sem precisar rolar a tela.'] },
     { v: '2.15.0', d: '03/11/2026', items: ['Botão "Enviar para conferência" dentro do projeto: salva a ficha e move para a conferência sem precisar arrastar. O conferente é avisado no sininho.'] },
     { v: '2.14.3', d: '03/11/2026', items: ['Minha conta no teste explica que a troca de senha é feita no gestor oficial.'] },
@@ -5100,6 +5102,63 @@
       else { setSync('error', 'Não conectado'); toast('Conecte o GitHub em Configurações para salvar seus dados lá.'); }
     });
   }
+  /* =========================================================
+     Atualização automática do site
+     De 5 em 5 minutos (e ao voltar para a aba) confere se saiu
+     uma versão nova do gestor. Se saiu, recarrega sozinho, mas
+     só quando é seguro: nenhuma janela aberta, nada sendo
+     digitado ou arrastado e tudo já salvo.
+     ========================================================= */
+  var UPD_KEY = KP + 'updatedFrom';
+  function verNum(v) { return String(v || '').split('.').map(function (x) { return parseInt(x, 10) || 0; }); }
+  function isNewer(a, b) { /* a é mais nova que b? */
+    var x = verNum(a), y = verNum(b);
+    for (var i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); }
+    return false;
+  }
+  function safeToReload() {
+    if (document.querySelector('.backdrop:not([hidden])')) return false;            /* ficha, conta, confirmação etc. */
+    if (!prioPop.hidden || !colorPop.hidden) return false;                          /* listinhas abertas */
+    var b = document.body.classList;
+    if (b.contains('dragging-active') || b.contains('ag-dragging')) return false;   /* arrastando */
+    var a = document.activeElement;
+    if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return false;              /* digitando */
+    if (gh.timer || gh.writing || gh.pending || gh.failed || gh.conflict || logPending) return false; /* falta salvar */
+    return true;
+  }
+  var updWaiting = '', updBusy = false;
+  async function checkNewVersion() {
+    if (location.protocol !== 'https:' && location.protocol !== 'http:') return;
+    if (updBusy) return;
+    updBusy = true;
+    try {
+      if (!updWaiting) {
+        var res = await fetch(location.pathname + '?vcheck=' + Date.now(), { cache: 'no-store' });
+        if (res.ok) {
+          var m = /var APP_VERSION = '([^']+)'/.exec(await res.text());
+          if (m && isNewer(m[1], APP_VERSION)) updWaiting = m[1];
+        }
+      }
+      if (updWaiting && safeToReload()) {
+        try { sessionStorage.setItem(UPD_KEY, APP_VERSION); } catch (e) {}
+        /* endereço novo para não pegar a página velha guardada no navegador */
+        location.replace(location.pathname + '?v=' + encodeURIComponent(updWaiting));
+      }
+    } catch (e) { /* sem internet: tenta de novo depois */ }
+    updBusy = false;
+  }
+  /* depois de recarregar: limpa o endereço e avisa */
+  (function () {
+    if (/[?&]v=/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash);
+    var from = '';
+    try { from = sessionStorage.getItem(UPD_KEY) || ''; sessionStorage.removeItem(UPD_KEY); } catch (e) {}
+    if (from && from !== APP_VERSION) setTimeout(function () { toast('Gestor atualizado para a versão ' + APP_VERSION + '.'); }, 800);
+  })();
+  setInterval(checkNewVersion, 5 * 60000);
+  /* quando já se sabe que há versão nova, tenta recarregar a cada 20 s até ficar seguro */
+  setInterval(function () { if (updWaiting) checkNewVersion(); }, 20000);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') checkNewVersion(); });
+  setTimeout(checkNewVersion, 15000);
 })();
 </script>
 </body>
