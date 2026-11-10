@@ -5211,13 +5211,15 @@
     if (!mineEl) return;
     var me = mineWho();
     var open = state.projects.filter(function (p) { return !isDoneStatus(p.statusId); });
-    var mine = open.filter(function (p) { return !isConfStatus(p.statusId) && p.responsibles.indexOf(me) >= 0; });
+    /* só Em andamento e Em revisão (Em espera e Não iniciado ficam de fora); em conferência vai na seção de baixo */
+    var isWorking = function (p) { var n = norm(nameIn(state.statuses, p.statusId, '')); return n.indexOf('andamento') >= 0 || n.indexOf('revis') >= 0; };
+    var mine = open.filter(function (p) { return !isConfStatus(p.statusId) && isWorking(p) && p.responsibles.indexOf(me) >= 0; });
     var toCheck = open.filter(function (p) { return isConfStatus(p.statusId) && p.checker === me; });
     var waiting = open.filter(function (p) { return isConfStatus(p.statusId) && p.checker !== me && p.responsibles.indexOf(me) >= 0; });
     var byDue = function (a, b) { var x = a.deadline || '9999', y = b.deadline || '9999'; return x < y ? -1 : (x > y ? 1 : 0); };
     mine.sort(byDue); toCheck.sort(byDue); waiting.sort(byDue);
     /* em andamento = só os status Em andamento e Em revisão; atrasado e vence hoje separados */
-    var going = mine.filter(function (p) { var n = norm(nameIn(state.statuses, p.statusId, '')); return n.indexOf('andamento') >= 0 || n.indexOf('revis') >= 0; }).length;
+    var going = mine.length;
     var late = mine.filter(function (p) { var d = daysUntil(p.deadline); return d !== null && d < 0; }).length;
     var today = mine.filter(function (p) { return daysUntil(p.deadline) === 0; }).length;
     /* caixinhas no estilo das Estatísticas */
@@ -5327,9 +5329,10 @@
   document.addEventListener('animationend', function (e) { if (e.target.classList && e.target.classList.contains('tab-glass')) e.target.classList.remove('moving'); });
 
   /* ---------- Versão ---------- */
-  var APP_VERSION = '2.20.0';
+  var APP_VERSION = '2.20.1';
   /* Histórico de versões: acrescentar a nova versão no topo a cada lançamento */
   var CHANGELOG = [
+    { v: '2.20.1', d: '10/11/2026', items: ['Pessoal mostra só os projetos Em andamento e Em revisão (Em espera e Não iniciado saíram); os em conferência continuam na parte de baixo.'] },
     { v: '2.20.0', d: '10/11/2026', items: ['Ficha do projeto: saíram os campos Cliente e Local / Obra, e a ficha ficou uma linha menor.', 'O que estava escrito neles foi para o fim da descrição (ex.: "Cliente: ENG. FABRICIO SENS"), sem apagar o que já havia na descrição.'] },
     { v: '2.19.7', d: '10/11/2026', items: ['A aba Meus projetos passou a se chamar Pessoal.'] },
     { v: '2.19.6', d: '10/11/2026', items: ['Projetos com 4 responsáveis mostram as 4 bolinhas (o "+1" só aparece a partir de 5 pessoas).'] },
