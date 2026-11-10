@@ -965,6 +965,8 @@
     background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
     box-shadow: var(--shadow-lg);
   }
+  /* Responsáveis: a lista abre para cima, para não precisar rolar a ficha */
+  #f-resp .multi-panel { top: auto; bottom: calc(100% + 4px); }
   .multi-empty { padding: 14px; text-align: center; font-size: 13px; color: var(--muted); }
 
   /* ---------- Aviso rápido ---------- */
@@ -5035,9 +5037,10 @@
   });
 
   /* ---------- Versão ---------- */
-  var APP_VERSION = '2.15.0';
+  var APP_VERSION = '2.15.1';
   /* Histórico de versões: acrescentar a nova versão no topo a cada lançamento */
   var CHANGELOG = [
+    { v: '2.15.1', d: '10/11/2026', items: ['Na ficha do projeto, a lista de Responsáveis agora abre para cima, sem precisar rolar a tela.'] },
     { v: '2.15.0', d: '03/11/2026', items: ['Botão "Enviar para conferência" dentro do projeto: salva a ficha e move para a conferência sem precisar arrastar. O conferente é avisado no sininho.'] },
     { v: '2.14.3', d: '03/11/2026', items: ['Minha conta no teste explica que a troca de senha é feita no gestor oficial.'] },
     { v: '2.14.2', d: '03/11/2026', items: ['Corrigido: clicar no seu nome abria a tela de "primeiro acesso" sem como fechar. Agora abre Minha conta, com Fechar, Sair e troca de senha opcional (fecha também com Esc ou clicando fora).'] },
