@@ -333,7 +333,10 @@
   textarea { resize: vertical; }
   input[type="date"] { min-height: 38px; }
 
-  main { padding: 24px 24px 8px; }
+  /* o conteúdo ocupa pelo menos a tela toda, para o rodapé ficar sempre no fim da tela */
+  body { display: flex; flex-direction: column; min-height: 100vh; box-sizing: border-box; }
+  main { padding: 24px 24px 8px; flex: 1 0 auto; }
+  .app-foot { flex: none; }
   .agenda { max-width: 1400px; margin: 0 auto; }
   .ag-filters { max-width: 1400px; margin: 0 auto; height: 0; position: relative; z-index: 20; display: flex; }
   @media (max-width: 900px) { .ag-filters { height: auto; margin-bottom: 10px; } }
@@ -2066,8 +2069,27 @@
   function typesHTML(p, emptyLabel) {
     var ts = typesOf(p);
     if (!ts.length) return emptyLabel ? '<span class="muted">' + esc(emptyLabel) + '</span>' : '';
-    return '<span class="tags">' + ts.map(function (t) { return tag(t, ''); }).join('') + '</span>';
+    return '<span class="tags">' + ts.map(function (t) {
+      return '<span class="tag" title="' + esc(t.name) + '" data-full="' + esc(t.name) + '" data-short="' + esc(shortName(t.name)) + '"><span class="dot" style="background:' + esc(t.color) + '"></span><span>' + esc(t.name) + '</span></span>';
+    }).join('') + '</span>';
   }
+  /* Nome curto da disciplina: 3 letras (Arquitetônico = Arq). Siglas curtas (PPCI) ficam como estão. */
+  function shortName(n) {
+    n = String(n || '').trim();
+    if (n.length <= 4 && n === n.toUpperCase()) return n;
+    return n.slice(0, 3);
+  }
+  /* Quando as disciplinas passam de 2 linhas na célula, mostra só as 3 letras */
+  function fitTypes() {
+    $$('.c-type .tags').forEach(function (box) {
+      var tags = $$('.tag[data-full]', box);
+      tags.forEach(function (t) { t.lastChild.textContent = t.dataset.full; });
+      var tops = {};
+      tags.forEach(function (t) { tops[t.offsetTop] = 1; });
+      if (Object.keys(tops).length >= 3) tags.forEach(function (t) { t.lastChild.textContent = t.dataset.short; });
+    });
+  }
+  window.addEventListener('resize', function () { fitTypes(); });
   function purgeRefs() {
     FILTERS.forEach(function (def) {
       var ids = state[def.list].map(function (x) { return x.id; });
@@ -2507,6 +2529,7 @@
         return groupHTML(g, list.filter(function (p) { return inGroup(p, g.id); }), filtering);
       }).join('');
     }
+    fitTypes();
     resultCount.textContent = list.length === state.projects.length
       ? state.projects.length + ' projeto(s)'
       : list.length + ' de ' + state.projects.length + ' projeto(s)';
@@ -5329,9 +5352,11 @@
   document.addEventListener('animationend', function (e) { if (e.target.classList && e.target.classList.contains('tab-glass')) e.target.classList.remove('moving'); });
 
   /* ---------- Versão ---------- */
-  var APP_VERSION = '2.20.1';
+  var APP_VERSION = '2.21.0';
   /* Histórico de versões: acrescentar a nova versão no topo a cada lançamento */
   var CHANGELOG = [
+    { v: '2.21.0', d: '11/11/2026', items: ['Quadro: quando as disciplinas ocupam 3 linhas ou mais, os nomes ficam com 3 letras (Arquitetônico = Arq). Passe o mouse para ver o nome inteiro.'] },
+    { v: '2.20.2', d: '11/11/2026', items: ['O rodapé (versão e "Developed by") fica sempre no fim da tela, mesmo quando a página tem pouco conteúdo.'] },
     { v: '2.20.1', d: '10/11/2026', items: ['Pessoal mostra só os projetos Em andamento e Em revisão (Em espera e Não iniciado saíram); os em conferência continuam na parte de baixo.'] },
     { v: '2.20.0', d: '10/11/2026', items: ['Ficha do projeto: saíram os campos Cliente e Local / Obra, e a ficha ficou uma linha menor.', 'O que estava escrito neles foi para o fim da descrição (ex.: "Cliente: ENG. FABRICIO SENS"), sem apagar o que já havia na descrição.'] },
     { v: '2.19.7', d: '10/11/2026', items: ['A aba Meus projetos passou a se chamar Pessoal.'] },
