@@ -216,8 +216,16 @@
   }
   .talk-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border-radius: 10px; background: var(--primary-soft); }
   .talk-actions .t { flex: 1; min-width: 180px; font-size: 13px; font-weight: 600; }
-  .talk .btn.btn-ok, .modal-foot .btn.btn-ok { background: #22a06b; border-color: #22a06b; color: #fff; }
-  .talk .btn.btn-ok:hover, .modal-foot .btn.btn-ok:hover { filter: brightness(1.05); background: #22a06b; }
+  .talk .btn.btn-ok { background: #22a06b; border-color: #22a06b; color: #fff; }
+  .talk .btn.btn-ok:hover { filter: brightness(1.05); background: #22a06b; }
+  /* no rodapé da ficha o Salvar é o botão principal; conferência fica discreta */
+  .chk-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: center; }
+  .chk-row select { min-width: 0; }
+  .chk-row .btn { justify-self: start; }
+  .chk-row .btn.btn-ok { background: transparent; border: 1px solid #22a06b; color: #22a06b; white-space: nowrap; }
+  .chk-row .btn.btn-ok:hover { background: rgba(34,160,107,.12); }
+  form:has(#sendConfBtn) .modal-foot .btn-primary { background: #22a06b; border-color: #22a06b; }
+  form:has(#sendConfBtn) .modal-foot .btn-primary:hover { background: #1c8a5c; border-color: #1c8a5c; }
   .ret-form { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; }
   .ret-form textarea { min-height: 80px; }
   .ret-form .row2 { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -1301,9 +1309,9 @@
         <span class="label">Responsáveis</span>
         <div class="multi" id="f-resp"></div>
       </div>
-      <div class="field">
+      <div class="field full">
         <label for="f-checker">Conferente</label>
-        <select id="f-checker"></select>
+        <div class="chk-row"><select id="f-checker"></select><button type="button" class="btn btn-ok" id="sendConfBtn" hidden>Enviar para conferência</button></div>
       </div>
       <div class="field full" style="display:none"><!-- Observações saiu: o texto antigo foi juntado à descrição -->
         <label for="f-notes">Observações</label>
@@ -1316,7 +1324,6 @@
       <button type="button" class="btn btn-danger" id="deleteBtn">Excluir</button>
       <div class="spacer"></div>
       <button type="button" class="btn" id="osBtn" hidden>Ordem de serviço</button>
-      <button type="button" class="btn btn-ok" id="sendConfBtn" hidden>Enviar para conferência</button>
       <button type="button" class="btn" data-close>Cancelar</button>
       <button type="submit" class="btn btn-primary">Salvar</button>
     </div>
@@ -2015,8 +2022,116 @@
     if (!p.typeIds.length) return 'Clique para mudar o andamento';
     return p.typeIds.map(function (t) { return nameIn(state.types, t, '') + ': ' + (p.dprog[t] || 0) + '%'; }).join('\n');
   }
+  /* =========================================================
+     Desfazer / refazer (Ctrl+Z / Ctrl+Y): guarda o "antes e depois"
+     de cada projeto ou das configurações que mudaram nesta aba.
+     ========================================================= */
+  var UNDO_MAX = 30, UNDO_CFG = ['title', 'priorities', 'statuses', 'types', 'collaborators'];
+  var undoStack = [], redoStack = [], undoBase = null, undoBusy = false;
+  function undoSnap() {
+    /* a conversa/histórico fica de fora da comparação (ele é gravado sozinho logo depois da mudança) */
+    var m = { ids: [], p: {}, f: {} };
+    state.projects.forEach(function (x) {
+      m.ids.push(x.id);
+      m.f[x.id] = JSON.stringify(x);
+      var c = x.comments; x.comments = undefined; m.p[x.id] = JSON.stringify(x); x.comments = c;
+    });
+    m.cfg = JSON.stringify(pick(state, UNDO_CFG));
+    return m;
+  }
+  function undoDiff(a, b) {
+    var ch = [], seen = {};
+    a.ids.concat(b.ids).forEach(function (id) {
+      if (seen[id]) return; seen[id] = 1;
+      if (a.p[id] !== b.p[id]) ch.push({ id: id, b: a.p[id], a: b.p[id], bf: a.f[id], af: b.f[id], idx: a.ids.indexOf(id) });
+    });
+    if (a.cfg !== b.cfg) ch.push({ cfg: true, b: a.cfg, a: b.cfg });
+    if (!ch.length && a.ids.join() !== b.ids.join()) ch.push({ order: true, b: a.ids, a: b.ids });
+    return ch;
+  }
+  function undoTrack() {
+    var now = undoSnap();
+    if (undoBase && !undoBusy) {
+      var ch = undoDiff(undoBase, now);
+      if (ch.length) {
+        var last = undoStack[undoStack.length - 1], t = Date.now();
+        var keyOf = function (l) { return l.map(function (c) { return c.cfg ? 'cfg' : (c.order ? 'ord' : c.id); }).join(); };
+        if (last && t - last.t < 1500 && keyOf(last.ch) === keyOf(ch) && !ch.some(function (c) { return c.order; })) {
+          /* digitação rápida no mesmo item: junta numa mudança só */
+          last.ch.forEach(function (c, i) { c.a = ch[i].a; c.af = ch[i].af; }); last.t = t;
+        } else {
+          undoStack.push({ ch: ch, t: t });
+          if (undoStack.length > UNDO_MAX) undoStack.shift();
+        }
+        redoStack = [];
+      }
+    }
+    undoBase = now;
+  }
+  function undoLabel(ch) {
+    var names = ch.map(function (c) {
+      if (c.cfg) return 'configurações';
+      if (c.order) return 'ordem dos projetos';
+      var j = JSON.parse(c.a || c.b); return fmtName(j.name);
+    });
+    return names.length > 2 ? names.length + ' itens' : names.join(' e ');
+  }
+  function undoApply(entry, back) {
+    var cur = undoSnap();
+    var from = back ? 'a' : 'b', to = back ? 'b' : 'a';
+    var bad = entry.ch.some(function (c) {
+      if (c.cfg) return cur.cfg !== c[from];
+      if (c.order) return false;
+      return cur.p[c.id] !== c[from];
+    });
+    if (bad) { toast('Não dá para ' + (back ? 'desfazer' : 'refazer') + ': isso foi mudado depois (talvez por outra pessoa).'); return false; }
+    entry.ch.forEach(function (c) {
+      if (c.cfg) { Object.assign(state, JSON.parse(c[to])); return; }
+      if (c.order) {
+        var map = {}; state.projects.forEach(function (x) { map[x.id] = x; });
+        var ord = c[to].filter(function (id) { return map[id]; });
+        state.projects.forEach(function (x) { if (ord.indexOf(x.id) < 0) ord.push(x.id); });
+        state.projects = ord.map(function (id) { return map[id]; });
+        return;
+      }
+      var i = state.projects.findIndex(function (x) { return x.id === c.id; });
+      var full = c[to + 'f'];
+      if (c[to] === undefined) { if (i >= 0) state.projects.splice(i, 1); }
+      else if (i >= 0) { var nx = JSON.parse(full); nx.comments = state.projects[i].comments; state.projects[i] = nx; }
+      else state.projects.splice(Math.min(Math.max(c.idx, 0), state.projects.length), 0, JSON.parse(full));
+    });
+    undoBusy = true; save(); undoBusy = false;
+    undoBase = undoSnap();
+    renderAll();
+    return true;
+  }
+  function doUndo() {
+    var e = undoStack.pop();
+    if (!e) { toast('Nada para desfazer.'); return; }
+    if (undoApply(e, true)) { redoStack.push(e); toast('Desfeito: ' + undoLabel(e.ch) + '. (Ctrl+Y refaz)'); }
+    else undoStack.push(e);
+  }
+  function doRedo() {
+    var e = redoStack.pop();
+    if (!e) { toast('Nada para refazer.'); return; }
+    if (undoApply(e, false)) { undoStack.push(e); toast('Refeito: ' + undoLabel(e.ch) + '.'); }
+    else redoStack.push(e);
+  }
+  document.addEventListener('keydown', function (e) {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    var k = e.key.toLowerCase();
+    var isUndo = k === 'z' && !e.shiftKey, isRedo = k === 'y' || (k === 'z' && e.shiftKey);
+    if (!isUndo && !isRedo) return;
+    var t = e.target;
+    if (t && (t.closest('input, textarea, select, [contenteditable="true"], [contenteditable="plaintext-only"]'))) return; /* desfazer da digitação */
+    if ($$('.backdrop').some(function (b) { return !b.hidden; })) return; /* com janela aberta, não mexe */
+    e.preventDefault();
+    if (isUndo) doUndo(); else doRedo();
+  });
+
   function save() {
     state.projects.forEach(syncProg);
+    undoTrack();
     osWatch(true);
     scheduleLog();
     writeLocal(PREFS_KEY, pick(state, LOCAL_KEYS));
@@ -5209,6 +5324,7 @@
      Renderização geral
      ========================================================= */
   function refreshData() {
+    if (!undoBusy) undoBase = undoSnap();
     osWatch(false);
     renderBell();
     renderFilters();
@@ -5742,9 +5858,11 @@
   }
 
   /* ---------- Versão ---------- */
-  var APP_VERSION = '3.0.0';
+  var APP_VERSION = '3.1.1';
   /* Histórico de versões: acrescentar a nova versão no topo a cada lançamento */
   var CHANGELOG = [
+    { v: '3.1.1', d: '12/11/2026', items: ['Na ficha do projeto o Salvar ficou verde e é o botão de destaque. O Enviar para conferência foi para o lado do campo Conferente.'] },
+    { v: '3.1.0', d: '12/11/2026', items: ['Ctrl+Z desfaz e Ctrl+Y (ou Ctrl+Shift+Z) refaz as suas últimas mudanças nesta aba (até 30). Dentro de campos de texto continua desfazendo a digitação.'] },
     { v: '3.0.0', d: '12/11/2026', items: ['Ordem de serviço: emitida quando o projeto vai para Em revisão, na folha timbrada da SteinCorp, com Baixar PDF, Imprimir, editar, excluir e Abrir todas. Número da OS = número do projeto + ordem (ex.: 372-001).', 'Andamento por disciplina: cada disciplina tem a sua porcentagem e o andamento geral é a média delas.', 'Usuários com nome completo (aparece só na OS; no resto do gestor fica o primeiro nome).', 'Quadro: disciplinas abreviadas com 3 letras quando ocupam muitas linhas; rodapé sempre no fim da tela.'] },
     { v: '2.25.0', d: '12/11/2026', items: ['Andamento por disciplina: cada disciplina tem a sua porcentagem, com uma barra para cada uma no Andamento da ficha.', 'O andamento geral é a média das disciplinas. No Quadro, clicar no andamento mostra cada disciplina; passar o mouse mostra o resumo.'] },
     { v: '2.24.2', d: '12/11/2026', items: ['O botão Ordem de serviço na ficha só aparece nos projetos que estão Em revisão.'] },
