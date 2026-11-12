@@ -1148,13 +1148,18 @@
   .mr-name { min-width: 0; cursor: pointer; }
   .mr-name b { display: block; font-weight: 600; font-size: 14px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .mr-name b:hover { color: var(--primary); }
-  .mr-name span { display: block; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mr-name > span { display: block; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .mr-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
   .mr-sep { display: inline-block; width: 10px; }
   .mr-due { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
   .mr-due.late { color: var(--danger); font-weight: 600; }
   .mr-due.soon { color: #c27c0e; font-weight: 600; }
-  .mr-prog { display: flex; align-items: center; gap: 6px; }
+  .mr-prog { display: flex; align-items: center; gap: 8px; width: 100%; background: transparent; border: 0; padding: 8px 6px; border-radius: 8px; cursor: pointer; color: inherit; font: inherit; }
+  .mr-prog:hover { background: var(--hover); }
+  .mr-prog { border: 1px dashed transparent; }
+  .mr-prog .mr-caret { width: 12px; height: 12px; flex: none; color: var(--muted); opacity: .55; transition: opacity .15s, transform .15s; }
+  .mr-prog:hover .mr-caret { opacity: 1; transform: translateY(1px); }
+  .mr-prog:hover { border-color: var(--border); }
   .mr-prog .bar { flex: 1; height: 5px; border-radius: 999px; background: var(--hover); overflow: hidden; }
   .mr-prog .bar span { display: block; height: 100%; background: var(--primary); border-radius: 999px; transition: width .25s ease; }
   .mr-prog .pct { width: 34px; text-align: right; font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--muted); }
@@ -5507,15 +5512,14 @@
   }
   function mineRow(p, kind) {
     /* disciplinas com a bolinha da cor, como no Quadro */
-    var discs = p.typeIds.map(function (id) { var t = byId(state.types, id); return t ? '<i class="mr-dot" style="background:' + esc(t.color) + '"></i>' + esc(t.name) : ''; }).filter(Boolean).join('<i class="mr-sep"></i>');
+    var discs = p.typeIds.map(function (id) { var t = byId(state.types, id); return t ? '<i class="mr-dot" style="background:' + esc(t.color) + '"></i><span class="mr-dn" title="' + esc(t.name) + '" data-short="' + esc(shortName(t.name)) + '">' + esc(t.name) + '</span>' : ''; }).filter(Boolean).join('<i class="mr-sep"></i>');
     var sub = kind === 'check' ? esc('De ' + (p.responsibles.map(whoName).join(', ') || 'alguém')) :
       (kind === 'wait' ? esc('Com ' + whoName(p.checker) + ' para conferir') : (discs || esc(nameIn(state.statuses, p.statusId, ''))));
     var h = '<div class="mr' + (mineUi.flash === p.id ? ' flash' : '') + (mineUi.popId === p.id ? ' open' : '') + '" data-mc="' + esc(p.id) + '">' +
       '<div class="mr-name" data-mc-open title="Abrir a ficha"><b>' + esc(fmtName(p.name)) + '</b><span>' + sub + '</span></div>' + mineDue(p);
     if (kind === 'mine') {
-      h += '<div class="mr-prog"><button type="button" class="mr-ic mr-step" data-mq="p-10" title="Menos 10%">−</button>' +
-        '<div class="bar"><span style="width:' + p.progress + '%"></span></div><span class="pct">' + p.progress + '%</span>' +
-        '<button type="button" class="mr-ic mr-step" data-mq="p+10" title="Mais 10%">+</button></div>' +
+      h += '<button type="button" class="mr-prog" data-mq="prog" title="Clique para mudar o andamento">' +
+        '<div class="bar"><span style="width:' + p.progress + '%"></span></div><span class="pct">' + p.progress + '%</span><svg class="mr-caret" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
         '<div class="mr-act"><button type="button" class="mr-ic" data-mq="pop-date" title="Mudar o prazo">' + MI.cal + '</button>' +
         '<button type="button" class="mr-ic" data-mq="pop-note" title="Recado">' + MI.msg + '</button>' +
         (confStatusId() ? '<button type="button" class="mr-ic txt go" data-mq="conf" title="' + (p.checker ? 'Enviar para ' + esc(whoName(p.checker)) + ' conferir' : 'Escolher quem confere') + '">Conferência →</button>' : '') + '</div>';
@@ -5555,6 +5559,10 @@
       '<div class="mine-empty">Nenhum projeto em andamento com você.</div>') + '</div>';
     if (waiting.length) html += '<div class="mine-sec">Em conferência</div><div class="mine-list">' + waiting.map(function (p) { return mineRow(p, 'wait'); }).join('') + '</div>';
     mineEl.innerHTML = html;
+    /* muitas disciplinas: se não cabem na linha, mostra só as 3 letras (igual ao Quadro) */
+    $$('.mr-name > span', mineEl).forEach(function (sp) {
+      if (sp.scrollWidth > sp.clientWidth + 1) $$('.mr-dn', sp).forEach(function (d) { d.textContent = d.dataset.short; });
+    });
     mineUi.flash = '';
     if (mineUi.pop === 'note') { var ta = $('[data-mq-text]', mineEl); if (ta) ta.focus(); }
   }
@@ -5591,7 +5599,7 @@
       if (ck) { p.checker = ck.dataset.mqChecker; mineSendConf(p); return; }
       var b = e.target.closest('[data-mq]'); if (!b) return;
       var a = b.dataset.mq;
-      if ((a === 'p+10' || a === 'p-10') && p.typeIds.length) {
+      if (a === 'prog') {
         if (progCtx && progCtx.id === p.id) { closeProgPop(); return; }
         openProgPop(row.querySelector('.mr-prog') || b, p.id);
         return;
@@ -5858,9 +5866,10 @@
   }
 
   /* ---------- Versão ---------- */
-  var APP_VERSION = '3.1.1';
+  var APP_VERSION = '3.1.2';
   /* Histórico de versões: acrescentar a nova versão no topo a cada lançamento */
   var CHANGELOG = [
+    { v: '3.1.2', d: '12/11/2026', items: ['Pessoal: tirados os botões − e +. Clicando na barra de andamento (setinha ao lado) abre o mesmo menu do Quadro, com as disciplinas.', 'Pessoal: quando as disciplinas não cabem na linha, aparecem só as 3 letras (Arq, Con, Hid...).'] },
     { v: '3.1.1', d: '12/11/2026', items: ['Na ficha do projeto o Salvar ficou verde e é o botão de destaque. O Enviar para conferência foi para o lado do campo Conferente.'] },
     { v: '3.1.0', d: '12/11/2026', items: ['Ctrl+Z desfaz e Ctrl+Y (ou Ctrl+Shift+Z) refaz as suas últimas mudanças nesta aba (até 30). Dentro de campos de texto continua desfazendo a digitação.'] },
     { v: '3.0.0', d: '12/11/2026', items: ['Ordem de serviço: emitida quando o projeto vai para Em revisão, na folha timbrada da SteinCorp, com Baixar PDF, Imprimir, editar, excluir e Abrir todas. Número da OS = número do projeto + ordem (ex.: 372-001).', 'Andamento por disciplina: cada disciplina tem a sua porcentagem e o andamento geral é a média delas.', 'Usuários com nome completo (aparece só na OS; no resto do gestor fica o primeiro nome).', 'Quadro: disciplinas abreviadas com 3 letras quando ocupam muitas linhas; rodapé sempre no fim da tela.'] },
