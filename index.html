@@ -1002,6 +1002,16 @@
   .os-box .modal-body { display: flex; flex-direction: column; gap: 14px; max-height: 70vh; overflow-y: auto; }
   .os-box .os-sub { margin: -4px 0 0; font-size: 13px; color: var(--muted); }
   .os-box textarea { min-height: 64px; resize: vertical; }
+  .ret-items { display: flex; flex-direction: column; gap: 8px; }
+  .ret-item { display: flex; align-items: center; gap: 8px; }
+  .ret-item .n { width: 22px; height: 22px; flex: none; border-radius: 50%; background: var(--danger-soft); color: var(--danger); font-size: 12px; font-weight: 700; display: grid; place-items: center; }
+  .ret-item input { flex: 1; min-width: 0; }
+  .ret-item .x { width: 28px; height: 28px; flex: none; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; font-size: 16px; }
+  .ret-item .x:hover { background: var(--hover); color: var(--danger); }
+  .ret-add { align-self: flex-start; margin-top: 8px; border: 1px dashed var(--border); background: transparent; color: var(--primary); border-radius: 8px; padding: 7px 12px; font: inherit; font-weight: 600; cursor: pointer; }
+  .ret-add:hover { background: var(--primary-soft); border-color: var(--primary); }
+  .btn-danger-fill { background: var(--danger); border-color: var(--danger); color: #fff; }
+  .btn-danger-fill:hover { filter: brightness(1.06); }
   .os-discs { display: flex; flex-wrap: wrap; gap: 6px; }
   .os-discs label { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 999px; font-size: 13px; cursor: pointer; }
   .os-discs label:has(input:checked) { border-color: var(--primary); background: var(--primary-soft); font-weight: 600; }
@@ -1144,6 +1154,16 @@
   .mr { display: grid; grid-template-columns: minmax(220px, 2.6fr) minmax(100px, .8fr) minmax(170px, 1.3fr) minmax(190px, 1fr); align-items: center; gap: 14px; padding: 11px 16px; border-top: 1px solid var(--border); position: relative; }
   .mr:first-child { border-top: 0; }
   .mr.flash { animation: mrFlash .9s ease; }
+  .mr.has-eye { padding-left: 44px; }
+  .mr-eye { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; padding: 3px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); opacity: .55; cursor: pointer; transition: opacity .15s, background .15s; }
+  .mr-eye svg { width: 18px; height: 18px; display: block; }
+  .mr-eye:hover { opacity: 1; background: var(--hover); color: var(--text); }
+  .mr.dim > *:not(.mr-eye) { opacity: .45; }
+  .mr.dim .mr-eye { opacity: .9; }
+  .mr-eye.fixed { cursor: default; opacity: .6 !important; }
+  .mr-eye.fixed:hover { background: transparent; color: var(--muted); }
+  .mr-eye.chk, .mr-eye.chk:hover { color: var(--primary); opacity: .9 !important; }
+  .mr.dim .mr-due { color: var(--muted); font-weight: 400; }
   @keyframes mrFlash { 0% { background: var(--primary-soft); } 100% { background: transparent; } }
   .mr-name { min-width: 0; cursor: pointer; }
   .mr-name b { display: block; font-weight: 600; font-size: 14px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1405,6 +1425,24 @@
 </div>
 
 <!-- Ordem de serviço -->
+<div id="retDlg" class="backdrop" hidden>
+  <form class="modal os-box" id="retForm" novalidate>
+    <div class="modal-head"><h2 id="retTitle">Devolver com ajustes</h2></div>
+    <div class="modal-body">
+      <p class="os-sub" id="retSub"></p>
+      <div class="field"><label>O que precisa ser ajustado?</label>
+        <div class="ret-items" id="retItems"></div>
+        <button type="button" class="ret-add" id="retAdd">+ Adicionar ajuste</button></div>
+      <div class="field"><label for="retStatus">Voltar para</label><select id="retStatus"></select></div>
+    </div>
+    <div class="modal-foot">
+      <div class="spacer"></div>
+      <button type="button" class="btn" id="retCancel">Cancelar</button>
+      <button type="submit" class="btn btn-danger-fill" id="retSubmit">Devolver</button>
+    </div>
+  </form>
+</div>
+
 <div id="osDlg" class="backdrop" hidden>
   <form class="modal os-box" id="osForm" novalidate>
     <div class="modal-head"><h2 id="osTitle">Ordem de serviço</h2></div>
@@ -1627,6 +1665,7 @@
         adjustments: (Array.isArray(p.adjustments) ? p.adjustments : []).filter(function (a) { return a && a.text; }).map(function (a) {
           return { id: String(a.id || ''), text: String(a.text), by: String(a.by || ''), at: String(a.at || ''), done: !!a.done, doneBy: String(a.doneBy || ''), doneAt: String(a.doneAt || '') };
         }),
+        hiddenFor: Array.isArray(p.hiddenFor) ? p.hiddenFor.map(String) : [],
         os: (Array.isArray(p.os) ? p.os : []).filter(function (o) { return o && o.n; }).map(function (o) {
           return { n: Number(o.n) || 0, at: String(o.at || ''), by: String(o.by || ''), typeIds: Array.isArray(o.typeIds) ? o.typeIds.map(String) : [],
             checker: String(o.checker || ''), reason: String(o.reason || ''), service: String(o.service || ''), obs: String(o.obs || '') };
@@ -2292,7 +2331,16 @@
       if (Object.keys(tops).length >= 3) tags.forEach(function (t) { t.lastChild.textContent = t.dataset.short; });
     });
   }
-  window.addEventListener('resize', function () { fitTypes(); });
+  /* Pessoal: se as disciplinas não cabem na linha, mostra só as 3 letras (igual ao Quadro) */
+  function fitMine() {
+    $$('#view-mine .mr-name > span').forEach(function (sp) {
+      var ds = $$('.mr-dn', sp);
+      if (!ds.length || !sp.clientWidth) return;
+      ds.forEach(function (d) { d.textContent = d.title; });
+      if (sp.scrollWidth > sp.clientWidth + 1) ds.forEach(function (d) { d.textContent = d.dataset.short; });
+    });
+  }
+  window.addEventListener('resize', function () { fitTypes(); fitMine(); });
   function purgeRefs() {
     FILTERS.forEach(function (def) {
       var ids = state[def.list].map(function (x) { return x.id; });
@@ -2432,6 +2480,7 @@
     });
     lastTabShown = state.tab;
     moveGlass();
+    fitMine();
     /* o mesmo filtro aparece na Agenda */
     var slot = state.tab === 'board' ? $('#agFilterSlot') : $('#resultCount');
     if (state.tab === 'board') { if (filtersEl.parentNode !== slot) slot.appendChild(filtersEl); }
@@ -4723,6 +4772,20 @@
     var ml = $('#talkMsgs'); if (ml) ml.scrollTop = ml.scrollHeight;
     var tt = $('#talk-text'); if (tt) { tt.classList.add('autogrow'); tt.addEventListener('input', function () { autoGrow(tt); }); }
   }
+  /* Devolver com ajustes: grava os itens, muda o status e avisa os responsáveis */
+  function returnProject(p, lines, to) {
+    var me = currentUser() || '', at = nowISO();
+    p.adjustments = (p.adjustments || []).concat(lines.map(function (x) { return { id: uid(), text: x, by: me, at: at, done: false, doneBy: '', doneAt: '' }; }));
+    skipStatusLog[p.id] = true;
+    changeStatus(p, to);
+    p.hiddenFor = [];
+    addComment(p, 'Devolveu com ' + lines.length + ' ajuste' + (lines.length > 1 ? 's' : '') + ':\n' + lines.map(function (x) { return '• ' + x; }).join('\n') + '\nVoltou para ' + byId(state.statuses, to).name + '.', 'sys', p.responsibles);
+  }
+  function retStatusOpts() {
+    var opts = state.statuses.filter(function (x) { return !isConfStatus(x.id) && !isDoneStatus(x.id); });
+    var def = opts.filter(function (x) { return norm(x.name).indexOf('andamento') >= 0; })[0] || opts[0];
+    return opts.map(function (x) { return '<option value="' + esc(x.id) + '"' + (def && def.id === x.id ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('');
+  }
   function talkChanged(p, msg) {
     markSeen(p.id);
     save(); refreshData(); renderTalk();
@@ -4767,18 +4830,13 @@
       talkUi.ret = false;
       talkChanged(p, 'Projeto aprovado.');
     } else if (a === 'ret-open') {
-      talkUi.ret = true; renderTalk(); var rt = $('#ret-text'); if (rt) rt.focus();
+      openRet(p.id);
     } else if (a === 'ret-cancel') {
       talkUi.ret = false; renderTalk();
     } else if (a === 'ret-send') {
       var lines = $('#ret-text').value.split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
       if (!lines.length) { $('#ret-text').focus(); toast('Escreva pelo menos um ajuste.'); return; }
-      var to = $('#ret-status').value;
-      var me = currentUser() || '', at = nowISO();
-      p.adjustments = (p.adjustments || []).concat(lines.map(function (x) { return { id: uid(), text: x, by: me, at: at, done: false, doneBy: '', doneAt: '' }; }));
-      skipStatusLog[p.id] = true;
-      changeStatus(p, to);
-      addComment(p, 'Devolveu com ' + lines.length + ' ajuste' + (lines.length > 1 ? 's' : '') + ':\n' + lines.map(function (x) { return '• ' + x; }).join('\n') + '\nVoltou para ' + byId(state.statuses, to).name + '.', 'sys', p.responsibles);
+      returnProject(p, lines, $('#ret-status').value);
       syncStatusFields(p);
       talkUi.ret = false;
       talkChanged(p, 'Projeto devolvido com ajustes.');
@@ -5488,7 +5546,7 @@
     var d = daysUntil(p.deadline);
     if (d === null) return '<span class="mr-due">Sem prazo</span>';
     if (d < 0) return '<span class="mr-due late">Atrasado ' + (-d) + (d === -1 ? ' dia' : ' dias') + '</span>';
-    if (d === 0) return '<span class="mr-due soon">Vence hoje</span>';
+    if (d === 0) return '<span class="mr-due late">Vence hoje</span>';
     if (d === 1) return '<span class="mr-due soon">Amanhã</span>';
     if (d <= 3) return '<span class="mr-due soon">Em ' + d + ' dias</span>';
     return '<span class="mr-due">' + fmtDate(p.deadline).slice(0, 5) + '</span>';
@@ -5510,12 +5568,20 @@
     }
     return '';
   }
+  var EYE_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-2.6 3.5M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M3 3l18 18"/></svg>';
+  var CLIP_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>';
+  function isHiddenFor(p, who) { return (p.hiddenFor || []).indexOf(who) >= 0; }
   function mineRow(p, kind) {
     /* disciplinas com a bolinha da cor, como no Quadro */
     var discs = p.typeIds.map(function (id) { var t = byId(state.types, id); return t ? '<i class="mr-dot" style="background:' + esc(t.color) + '"></i><span class="mr-dn" title="' + esc(t.name) + '" data-short="' + esc(shortName(t.name)) + '">' + esc(t.name) + '</span>' : ''; }).filter(Boolean).join('<i class="mr-sep"></i>');
     var sub = kind === 'check' ? esc('De ' + (p.responsibles.map(whoName).join(', ') || 'alguém')) :
       (kind === 'wait' ? esc('Com ' + whoName(p.checker) + ' para conferir') : (discs || esc(nameIn(state.statuses, p.statusId, ''))));
-    var h = '<div class="mr' + (mineUi.flash === p.id ? ' flash' : '') + (mineUi.popId === p.id ? ' open' : '') + '" data-mc="' + esc(p.id) + '">' +
+    var dim = (kind === 'mine' && isHiddenFor(p, mineWho())) || kind === 'wait';
+    var h = '<div class="mr' + ' has-eye' + (dim ? ' dim' : '') + (mineUi.flash === p.id ? ' flash' : '') + (mineUi.popId === p.id ? ' open' : '') + '" data-mc="' + esc(p.id) + '">' +
+      (kind === 'mine' ? '<button type="button" class="mr-eye" data-mq="eye" title="' + (dim ? 'Voltar a mostrar normal' : 'Terminei minha parte: mandar para Minha parte concluída') + '">' + (dim ? EYE_OFF : EYE_ON) + '</button>' : '') +
+      (kind === 'check' ? '<span class="mr-eye fixed chk" title="Para você conferir">' + CLIP_IC + '</span>' : '') +
+      (kind === 'wait' ? '<span class="mr-eye fixed" title="Em conferência com outra pessoa">' + CLIP_IC + '</span>' : '') +
       '<div class="mr-name" data-mc-open title="Abrir a ficha"><b>' + esc(fmtName(p.name)) + '</b><span>' + sub + '</span></div>' + mineDue(p);
     if (kind === 'mine') {
       h += '<button type="button" class="mr-prog" data-mq="prog" title="Clique para mudar o andamento">' +
@@ -5525,7 +5591,7 @@
         (confStatusId() ? '<button type="button" class="mr-ic txt go" data-mq="conf" title="' + (p.checker ? 'Enviar para ' + esc(whoName(p.checker)) + ' conferir' : 'Escolher quem confere') + '">Conferência →</button>' : '') + '</div>';
     } else if (kind === 'check') {
       h += '<div></div><div class="mr-act"><button type="button" class="mr-ic" data-mq="pop-note" title="Recado">' + MI.msg + '</button>' +
-        '<button type="button" class="mr-ic txt" data-mc-open>Devolver</button><button type="button" class="mr-ic txt go" data-mq="approve">Aprovar</button></div>';
+        '<button type="button" class="mr-ic txt" data-mq="ret">Devolver</button><button type="button" class="mr-ic txt go" data-mq="approve">Aprovar</button></div>';
     } else {
       h += '<div></div><div></div>';
     }
@@ -5542,6 +5608,8 @@
     var waiting = open.filter(function (p) { return isConfStatus(p.statusId) && p.checker !== me && p.responsibles.indexOf(me) >= 0; });
     var byDue = function (a, b) { var x = a.deadline || '9999', y = b.deadline || '9999'; return x < y ? -1 : (x > y ? 1 : 0); };
     mine.sort(byDue); toCheck.sort(byDue); waiting.sort(byDue);
+    var hid = mine.filter(function (p) { return isHiddenFor(p, me); });
+    mine = mine.filter(function (p) { return !isHiddenFor(p, me); });
     /* em andamento = só os status Em andamento e Em revisão; atrasado e vence hoje separados */
     var going = mine.length;
     var late = mine.filter(function (p) { var d = daysUntil(p.deadline); return d !== null && d < 0; }).length;
@@ -5558,11 +5626,10 @@
     html += '<div class="mine-sec">Seus projetos</div><div class="mine-list">' + (mine.length ? mine.map(function (p) { return mineRow(p, 'mine'); }).join('') :
       '<div class="mine-empty">Nenhum projeto em andamento com você.</div>') + '</div>';
     if (waiting.length) html += '<div class="mine-sec">Em conferência</div><div class="mine-list">' + waiting.map(function (p) { return mineRow(p, 'wait'); }).join('') + '</div>';
+    /* projetos em que a pessoa já terminou a parte dela (olhinho): grupo próprio, no fim */
+    if (hid.length) html += '<div class="mine-sec">Minha parte concluída</div><div class="mine-list">' + hid.map(function (p) { return mineRow(p, 'mine'); }).join('') + '</div>';
     mineEl.innerHTML = html;
-    /* muitas disciplinas: se não cabem na linha, mostra só as 3 letras (igual ao Quadro) */
-    $$('.mr-name > span', mineEl).forEach(function (sp) {
-      if (sp.scrollWidth > sp.clientWidth + 1) $$('.mr-dn', sp).forEach(function (d) { d.textContent = d.dataset.short; });
-    });
+    fitMine();
     mineUi.flash = '';
     if (mineUi.pop === 'note') { var ta = $('[data-mq-text]', mineEl); if (ta) ta.focus(); }
   }
@@ -5578,6 +5645,62 @@
     d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + n);
     return isoDay(d);
   }
+  var retDlg = $('#retDlg'), retId = '';
+  function openRet(id) {
+    var p = byId(state.projects, id); if (!p) return;
+    retId = id;
+    $('#retSub').textContent = fmtName(p.name) + (p.responsibles.length ? ' · de ' + p.responsibles.map(whoName).join(', ') : '');
+    $('#retItems').innerHTML = '';
+    retAddItem('');
+    $('#retStatus').innerHTML = retStatusOpts();
+    retDlg.hidden = false;
+    setTimeout(function () { var f = $('#retItems input'); if (f) f.focus(); }, 30);
+  }
+  /* cada ajuste é um campo próprio; Enter cria o próximo, ✕ apaga */
+  function retNumber() { $$('#retItems .ret-item .n').forEach(function (n, i) { n.textContent = i + 1; }); }
+  function retAddItem(v, after) {
+    var d = document.createElement('div');
+    d.className = 'ret-item';
+    d.innerHTML = '<span class="n"></span><input class="input" type="text" placeholder="Ex.: Pilar P3 sem armadura de espera"><button type="button" class="x" title="Apagar este ajuste">✕</button>';
+    d.querySelector('input').value = v;
+    var box = $('#retItems');
+    if (after && after.nextSibling) box.insertBefore(d, after.nextSibling); else box.appendChild(d);
+    retNumber();
+    return d.querySelector('input');
+  }
+  $('#retAdd').addEventListener('click', function () { retAddItem('').focus(); });
+  $('#retItems').addEventListener('click', function (e) {
+    var x = e.target.closest('.x'); if (!x) return;
+    var it = x.closest('.ret-item'), box = $('#retItems');
+    if (box.children.length === 1) { it.querySelector('input').value = ''; it.querySelector('input').focus(); return; }
+    var prev = it.previousElementSibling || it.nextElementSibling;
+    it.remove(); retNumber();
+    if (prev) prev.querySelector('input').focus();
+  });
+  $('#retItems').addEventListener('keydown', function (e) {
+    var inp = e.target.closest('input'); if (!inp) return;
+    var it = inp.closest('.ret-item');
+    if (e.key === 'Enter') { e.preventDefault(); if (inp.value.trim()) retAddItem('', it).focus(); }
+    else if (e.key === 'Backspace' && !inp.value && $('#retItems').children.length > 1) {
+      e.preventDefault(); var prev = it.previousElementSibling || it.nextElementSibling; it.remove(); retNumber();
+      if (prev) { var pi = prev.querySelector('input'); pi.focus(); pi.setSelectionRange(pi.value.length, pi.value.length); }
+    }
+  });
+  function closeRet() { retDlg.hidden = true; retId = ''; }
+  $('#retCancel').addEventListener('click', closeRet);
+  retDlg.addEventListener('click', function (e) { if (e.target === retDlg) closeRet(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !retDlg.hidden) { e.preventDefault(); e.stopImmediatePropagation(); closeRet(); } }, true); /* só fecha a caixinha, a ficha continua aberta */
+  $('#retForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var p = byId(state.projects, retId); if (!p) { closeRet(); return; }
+    var lines = $$('#retItems input').map(function (x) { return x.value.trim(); }).filter(Boolean);
+    if (!lines.length) { $('#retItems input').focus(); toast('Escreva pelo menos um ajuste.'); return; }
+    returnProject(p, lines, $('#retStatus').value);
+    closeRet();
+    if (editingId === p.id) { syncStatusFields(p); }
+    mineDone(p, 'Devolvido para ' + (p.responsibles.map(whoName).join(', ') || 'o responsável') + ' com ' + lines.length + ' ajuste' + (lines.length > 1 ? 's' : '') + '.');
+    if (editingId === p.id) { markSeen(p.id); renderTalk(); }
+  });
   function mineSendConf(p) {
     changeStatus(p, confStatusId());
     mineDone(p, 'Enviado para ' + whoName(p.checker) + ' conferir.');
@@ -5599,6 +5722,14 @@
       if (ck) { p.checker = ck.dataset.mqChecker; mineSendConf(p); return; }
       var b = e.target.closest('[data-mq]'); if (!b) return;
       var a = b.dataset.mq;
+      if (a === 'ret') { openRet(p.id); return; }
+      if (a === 'eye') {
+        var who = mineWho(), hf = (p.hiddenFor || []).slice(), ix = hf.indexOf(who);
+        if (ix >= 0) hf.splice(ix, 1); else hf.push(who);
+        p.hiddenFor = hf;
+        mineDone(p, ix >= 0 ? 'Voltou ao normal.' : 'Foi para Minha parte concluída. Não conta mais como atrasado ou vence hoje.');
+        return;
+      }
       if (a === 'prog') {
         if (progCtx && progCtx.id === p.id) { closeProgPop(); return; }
         openProgPop(row.querySelector('.mr-prog') || b, p.id);
@@ -5866,9 +5997,13 @@
   }
 
   /* ---------- Versão ---------- */
-  var APP_VERSION = '3.1.2';
+  var APP_VERSION = '3.3.0';
   /* Histórico de versões: acrescentar a nova versão no topo a cada lançamento */
   var CHANGELOG = [
+    { v: '3.3.0', d: '17/11/2026', items: ['Pessoal e ficha do projeto: Devolver abre uma caixinha com um campo para cada ajuste (Enter cria o próximo, ✕ apaga) e escolher para qual status o projeto volta, sem abrir a ficha.'] },
+    { v: '3.2.1', d: '17/11/2026', items: ['Pessoal: projetos seus em conferência com outra pessoa também ficam apagados, com uma prancheta cinza.', 'Pessoal: os projetos para você conferir ganharam um ícone de prancheta e ficaram alinhados com os outros.'] },
+    { v: '3.2.0', d: '17/11/2026', items: ['Pessoal: olhinho ao lado do projeto. Quem terminou a sua parte aperta e o projeto vai para o grupo Minha parte concluída, no fim da página, apagado, sem contar como atrasado ou vence hoje. Vale em todos os aparelhos e volta ao normal se o projeto for devolvido com ajustes.'] },
+    { v: '3.1.3', d: '12/11/2026', items: ['Pessoal: "Vence hoje" agora aparece em vermelho.'] },
     { v: '3.1.2', d: '12/11/2026', items: ['Pessoal: tirados os botões − e +. Clicando na barra de andamento (setinha ao lado) abre o mesmo menu do Quadro, com as disciplinas.', 'Pessoal: quando as disciplinas não cabem na linha, aparecem só as 3 letras (Arq, Con, Hid...).'] },
     { v: '3.1.1', d: '12/11/2026', items: ['Na ficha do projeto o Salvar ficou verde e é o botão de destaque. O Enviar para conferência foi para o lado do campo Conferente.'] },
     { v: '3.1.0', d: '12/11/2026', items: ['Ctrl+Z desfaz e Ctrl+Y (ou Ctrl+Shift+Z) refaz as suas últimas mudanças nesta aba (até 30). Dentro de campos de texto continua desfazendo a digitação.'] },
