@@ -4476,14 +4476,9 @@
   function fmtDate(d) { if (!d) return ''; var a = d.split('-'); return a.length === 3 ? a[2] + '/' + a[1] + '/' + a[0] : d; }
   function pushLog(p, text, f, from) {
     audit('proj', text, p, { f: f, from: from });
+    /* andamento (%) fica só no Histórico de atividades, não nas mensagens do projeto */
+    if (f === 'progress') return;
     var me = currentUser() || '';
-    var last = p.comments && p.comments[p.comments.length - 1];
-    if (f === 'progress' && last && last.kind === 'log' && last.f === 'progress' && last.by === me && (Date.now() - new Date(last.at).getTime()) < 10 * 60000) {
-      if (String(last.from) === String(p.progress)) { p.comments.pop(); return; }
-      last.text = 'Mudou o andamento de ' + last.from + '% para ' + p.progress + '%.';
-      last.at = nowISO();
-      return;
-    }
     p.comments = p.comments || [];
     var c = { id: uid(), by: me, at: nowISO(), text: text, kind: 'log' };
     if (f) c.f = f;
@@ -4827,7 +4822,8 @@
         }).join('') + '</div>' +
         (!pend ? '<button type="button" class="btn sm" data-talk="adj-clear" style="margin-top:6px">Limpar ajustes feitos</button>' : '') + '</div>';
     }
-    var msgs = p.comments || [];
+    /* mudanças de andamento antigas não aparecem mais nas mensagens */
+    var msgs = (p.comments || []).filter(function (m) { return !(m.kind === 'log' && (m.f === 'progress' || /^Mudou o andamento de /.test(m.text || ''))); });
     var canDel = isAdmin() && !!currentUser();
     html += '<div class="talk-title">Mensagens e histórico</div>' +
       '<div class="msgs" id="talkMsgs">' + (msgs.length ? msgs.map(function (m) {
@@ -6207,9 +6203,10 @@
   }
 
   /* ---------- Versão ---------- */
-  var APP_VERSION = '3.6.2';
+  var APP_VERSION = '3.6.3';
   /* Histórico de versões: acrescentar a nova versão no topo a cada lançamento */
   var CHANGELOG = [
+    { v: '3.6.3', d: '18/11/2026', items: ['Mudança de andamento (%) não aparece mais nas mensagens do projeto. Continua só no Histórico de atividades das Configurações.'] },
     { v: '3.6.2', d: '18/11/2026', items: ['Conversa da ficha e recado do Pessoal: Enter envia a mensagem e Shift+Enter desce de linha. Com a lista de @ aberta, Enter continua escolhendo o nome.'] },
     { v: '3.6.1', d: '18/11/2026', items: ['Ficha do projeto: os ajustes ficam dentro de uma caixa separada das mensagens (borda vermelha enquanto falta algo, verde quando todos foram feitos).'] },
     { v: '3.6.0', d: '18/11/2026', items: ['Pessoal: projeto que voltou com ajustes mostra a etiqueta vermelha "⚠ N ajustes" ao lado do nome. Ela some quando todos forem marcados.'] },
