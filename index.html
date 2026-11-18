@@ -254,6 +254,13 @@
   .msg-new { display: flex; gap: 8px; align-items: flex-end; position: relative; }
   .mention { color: var(--primary); font-weight: 600; }
   .mention.me { background: var(--primary-soft); border-radius: 4px; padding: 0 3px; }
+  .mhl-wrap { position: relative; flex: 1; min-width: 0; display: flex; }
+  .mhl-wrap > textarea { flex: 1; min-width: 0; }
+  .mhl-back { position: absolute; left: 0; top: 0; overflow: hidden; white-space: pre-wrap; overflow-wrap: break-word; border-style: solid; border-color: transparent; color: var(--text); background: var(--surface); pointer-events: none; }
+  .mhl-back .mhl-m { font-weight: inherit; color: var(--primary); text-shadow: .45px 0 0 currentColor, -.45px 0 0 currentColor; }
+  textarea.mhl-ta { position: relative; background: transparent !important; color: transparent !important; caret-color: var(--text); }
+  textarea.mhl-ta::placeholder { color: var(--muted); }
+  textarea.mhl-ta::selection { color: transparent; background: rgba(37, 99, 235, .25); }
   .mention-pop { position: absolute; left: 0; bottom: calc(100% + 6px); z-index: 70; min-width: 200px; max-height: 220px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-lg); padding: 4px; }
   .mention-pop button { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 7px 10px; border: 0; border-radius: 7px; background: transparent; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
   .mention-pop button.on, .mention-pop button:hover { background: var(--hover); }
@@ -1200,6 +1207,9 @@
   .mr-pop.mr-cal .cal-day.on { background: var(--primary); color: #fff; }
   .mr-pop.mr-cal .cal-foot button { text-align: center; padding: 7px; border: 1px solid var(--border); }
   .mr-pop .t { font-size: 11.5px; color: var(--muted); padding: 4px 10px 2px; }
+  .mr-note { position: relative; }
+  .mr-note .mention-pop { top: calc(100% + 4px); bottom: auto; }
+  .mr-pop .mention-pop button { padding: 7px 10px; }
   .mr-pop textarea { width: 260px; min-height: 60px; resize: vertical; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: 13px; }
   .mr-pop .row { display: flex; justify-content: flex-end; gap: 6px; padding-top: 4px; }
   .mine-empty { padding: 22px; text-align: center; color: var(--muted); font-size: 13px; }
@@ -4539,25 +4549,40 @@
     if (kind === 'sys') audit('conf', text.replace(/\n/g, ' '), p);
   }
   /* Menções: @Nome do colaborador dentro do texto */
+  function mentionKey(c) {
+    var first = String(c.name || '').trim().split(/\s+/)[0] || c.name;
+    var same = state.collaborators.filter(function (o) { return norm(String(o.name || '').trim().split(/\s+/)[0]) === norm(first); }).length;
+    return same === 1 ? first : c.name;
+  }
   function mentionsIn(text) {
     var low = String(text || '').toLowerCase();
     return state.collaborators.filter(function (c) {
-      var i = low.indexOf('@' + c.name.toLowerCase());
-      if (i < 0) return false;
-      var nx = low.charAt(i + c.name.length + 1);
-      return !nx || !/[a-z0-9à-ú]/i.test(nx);
+      return [c.name, mentionKey(c)].some(function (nm) {
+        var t = '@' + nm.toLowerCase(), i = low.indexOf(t);
+        while (i >= 0) {
+          var nx = low.charAt(i + t.length);
+          if (!nx || !/[a-z0-9à-ú]/i.test(nx)) return true;
+          i = low.indexOf(t, i + 1);
+        }
+        return false;
+      });
     }).map(function (c) { return c.id; });
   }
   function msgTextHTML(text) {
     var me = currentUser();
-    var names = state.collaborators.slice().sort(function (a, b) { return b.name.length - a.name.length; });
-    var out = esc(text);
-    names.forEach(function (c) {
-      out = out.split('@' + esc(c.name)).join('\u0000' + c.id + '\u0001');
+    var toks = [];
+    state.collaborators.forEach(function (c) {
+      toks.push({ id: c.id, t: c.name });
+      if (mentionKey(c) !== c.name) toks.push({ id: c.id, t: mentionKey(c) });
     });
-    return out.replace(/\u0000([^\u0001]+)\u0001/g, function (_, id) {
-      var c = byId(state.collaborators, id);
-      return '<span class="mention' + (id === me ? ' me' : '') + '">@' + esc(c ? c.name : '') + '</span>';
+    toks.sort(function (a, b) { return b.t.length - a.t.length; });
+    var out = esc(text);
+    toks.forEach(function (k, i) {
+      out = out.split('@' + esc(k.t)).join('\u0000' + i + '\u0001');
+    });
+    return out.replace(/\u0000(\d+)\u0001/g, function (_, i) {
+      var k = toks[+i];
+      return '<span class="mention' + (k.id === me ? ' me' : '') + '">@' + esc(k.t) + '</span>';
     });
   }
   function flagsHTML(p) {
@@ -4775,7 +4800,7 @@
       '<div class="msg-new"><textarea id="talk-text" rows="1" placeholder="Mensagem (@ para mencionar)"></textarea><div class="mention-pop" id="mentionPop" hidden></div><button type="button" class="btn btn-primary sm" data-talk="send">Enviar</button></div>';
     box.innerHTML = html;
     var ml = $('#talkMsgs'); if (ml) ml.scrollTop = ml.scrollHeight;
-    var tt = $('#talk-text'); if (tt) { tt.classList.add('autogrow'); tt.addEventListener('input', function () { autoGrow(tt); }); }
+    var tt = $('#talk-text'); if (tt) { tt.classList.add('autogrow'); tt.addEventListener('input', function () { autoGrow(tt); }); attachMentionHL(tt); }
   }
   /* Devolver com ajustes: grava os itens, muda o status e avisa os responsáveis */
   function returnProject(p, lines, to) {
@@ -4871,8 +4896,53 @@
     }
     talkChanged(p, msg);
   });
+  /* Realce de @Nome dentro da caixa de texto (azul e negrito quando o nome está certo) */
+  function mentionTokens() {
+    var toks = [];
+    state.collaborators.forEach(function (c) {
+      toks.push(c.name);
+      if (mentionKey(c) !== c.name) toks.push(mentionKey(c));
+    });
+    return toks.sort(function (a, b) { return b.length - a.length; });
+  }
+  function mentionHLHTML(text) {
+    var toks = mentionTokens(), out = '', i = 0, low = text.toLowerCase();
+    while (i < text.length) {
+      if (text.charAt(i) === '@' && (i === 0 || !/[a-z0-9à-ú]/i.test(text.charAt(i - 1)))) {
+        var hit = '';
+        for (var k = 0; k < toks.length; k++) {
+          var t = toks[k].toLowerCase(), nx = text.charAt(i + 1 + t.length);
+          if (low.substr(i + 1, t.length) === t && (!nx || !/[a-z0-9à-ú]/i.test(nx))) { hit = text.substr(i, t.length + 1); break; }
+        }
+        if (hit) { out += '<b class="mhl-m">' + esc(hit) + '</b>'; i += hit.length; continue; }
+      }
+      out += esc(text.charAt(i)); i++;
+    }
+    return out + (/\n$/.test(text) || !text ? ' ' : '');
+  }
+  function attachMentionHL(ta) {
+    if (!ta || ta._mhl) return;
+    var wrap = document.createElement('div'); wrap.className = 'mhl-wrap';
+    ta.parentNode.insertBefore(wrap, ta);
+    var back = document.createElement('div'); back.className = 'mhl-back'; back.setAttribute('aria-hidden', 'true');
+    wrap.appendChild(back); wrap.appendChild(ta);
+    ta.classList.add('mhl-ta');
+    function sync() {
+      var cs = getComputedStyle(ta);
+      ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+        'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'borderRadius', 'boxSizing', 'textIndent'].forEach(function (k) { back.style[k] = cs[k]; });
+      back.style.width = ta.offsetWidth + 'px'; back.style.height = ta.offsetHeight + 'px';
+      back.innerHTML = mentionHLHTML(ta.value);
+      back.scrollTop = ta.scrollTop;
+    }
+    ta._mhl = sync;
+    ta.addEventListener('input', function () { requestAnimationFrame(sync); });
+    ta.addEventListener('scroll', function () { back.scrollTop = ta.scrollTop; });
+    window.addEventListener('resize', sync);
+    sync();
+  }
   /* Lista de @menção enquanto digita */
-  var mention = { open: false, items: [], idx: 0, start: 0 };
+  var mention = { open: false, items: [], idx: 0, start: 0, ta: null, pop: null };
   function mentionCtx(ta) {
     var pos = ta.selectionStart, before = ta.value.slice(0, pos);
     var at = before.lastIndexOf('@');
@@ -4881,33 +4951,35 @@
     if (q.length > 30 || /\n/.test(q)) return null;
     return { start: at, q: q };
   }
-  function renderMention(ta) {
-    var pop = $('#mentionPop');
+  function renderMention(ta, pop) {
+    pop = pop || $('#mentionPop');
     if (!pop) return;
+    mention.ta = ta; mention.pop = pop;
     var ctx = mentionCtx(ta);
     var me = currentUser();
     var items = ctx ? state.collaborators.filter(function (c) {
-      return c.id !== me && norm(c.name).indexOf(norm(ctx.q)) === 0;
+      return c.id !== me && (norm(c.name).indexOf(norm(ctx.q)) === 0 || norm(mentionKey(c)).indexOf(norm(ctx.q)) === 0);
     }) : [];
     mention.open = !!(ctx && items.length);
     if (!mention.open) { pop.hidden = true; return; }
     mention.items = items; mention.start = ctx.start;
     if (mention.idx >= items.length) mention.idx = 0;
     pop.innerHTML = items.map(function (c, i) {
-      return '<button type="button" data-mention="' + esc(c.id) + '" class="' + (i === mention.idx ? 'on' : '') + '"><span class="dot" style="background:' + esc(c.color) + '"></span>' + esc(c.name) + '</button>';
+      return '<button type="button" data-mention="' + esc(c.id) + '" class="' + (i === mention.idx ? 'on' : '') + '"><span class="dot" style="background:' + esc(c.color) + '"></span>' + esc(mentionKey(c)) + '</button>';
     }).join('');
     pop.hidden = false;
   }
   function pickMention(id) {
-    var ta = $('#talk-text'), c = byId(state.collaborators, id);
+    var ta = mention.ta || $('#talk-text'), c = byId(state.collaborators, id);
     if (!ta || !c) return;
     var pos = ta.selectionStart;
-    var ins = '@' + c.name + ' ';
+    var ins = '@' + mentionKey(c) + ' ';
     ta.value = ta.value.slice(0, mention.start) + ins + ta.value.slice(pos);
     var np = mention.start + ins.length;
     ta.focus(); ta.setSelectionRange(np, np);
-    mention.open = false; mention.idx = 0; $('#mentionPop').hidden = true;
-    autoGrow(ta);
+    mention.open = false; mention.idx = 0; if (mention.pop) mention.pop.hidden = true;
+    if (ta.id === 'talk-text') autoGrow(ta);
+    if (ta._mhl) ta._mhl();
   }
   $('#talkBox').addEventListener('input', function (e) { if (e.target.id === 'talk-text') { mention.idx = 0; renderMention(e.target); } });
   $('#talkBox').addEventListener('mousedown', function (e) {
@@ -5569,7 +5641,7 @@
         return '<button type="button" data-mq-checker="' + esc(c.id) + '">' + esc(c.name) + '</button>'; }).join('') + '</div>';
     }
     if (mineUi.pop === 'note') {
-      return '<div class="mr-pop"><textarea data-mq-text placeholder="Recado (@ para mencionar)"></textarea>' +
+      return '<div class="mr-pop"><div class="mr-note"><textarea data-mq-text placeholder="Recado (@ para mencionar)"></textarea><div class="mention-pop" data-mq-mention hidden></div></div>' +
         '<div class="row"><button type="button" class="btn sm" data-mq="close">Cancelar</button><button type="button" class="btn btn-primary sm" data-mq="note-send">Enviar</button></div></div>';
     }
     return '';
@@ -5637,7 +5709,7 @@
     mineEl.innerHTML = html;
     fitMine();
     mineUi.flash = '';
-    if (mineUi.pop === 'note') { var ta = $('[data-mq-text]', mineEl); if (ta) ta.focus(); }
+    if (mineUi.pop === 'note') { var ta = $('[data-mq-text]', mineEl); if (ta) { attachMentionHL(ta); ta.focus(); } }
   }
   function mineClosePop() { if (mineUi.popId) { mineUi.pop = ''; mineUi.popId = ''; renderMine(); } }
   function mineDone(p, msg) {
@@ -5714,6 +5786,28 @@
   if (mineEl) {
     document.addEventListener('pointerdown', function (e) { if (mineUi.popId && !e.target.closest('.mr.open')) mineClosePop(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && mineUi.popId) mineClosePop(); });
+    /* lista de @ no recado */
+    mineEl.addEventListener('input', function (e) {
+      if (!e.target.matches('[data-mq-text]')) return;
+      mention.idx = 0; renderMention(e.target, e.target.parentNode.querySelector('[data-mq-mention]'));
+    });
+    mineEl.addEventListener('mousedown', function (e) {
+      var b = e.target.closest('[data-mq-mention] [data-mention]');
+      if (b) { e.preventDefault(); pickMention(b.dataset.mention); }
+    });
+    mineEl.addEventListener('focusout', function (e) {
+      if (e.target.matches('[data-mq-text]')) setTimeout(function () { if (mention.pop && mention.ta === e.target) { mention.pop.hidden = true; mention.open = false; } }, 150);
+    });
+    mineEl.addEventListener('keydown', function (e) {
+      if (!e.target.matches('[data-mq-text]') || !mention.open) return;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        mention.idx = (mention.idx + (e.key === 'ArrowDown' ? 1 : -1) + mention.items.length) % mention.items.length;
+        renderMention(e.target, mention.pop); return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); pickMention(mention.items[mention.idx].id); return; }
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); mention.open = false; mention.pop.hidden = true; }
+    });
     mineEl.addEventListener('change', function (e) {
       if (e.target.id === 'mineWho') { mineUi.who = e.target.value; mineUi.pop = ''; mineUi.popId = ''; renderMine(); return; }
       var row = e.target.closest('[data-mc]'); if (!row) return;
@@ -6011,9 +6105,10 @@
   }
 
   /* ---------- Versão ---------- */
-  var APP_VERSION = '3.3.1';
+  var APP_VERSION = '3.4.0';
   /* Histórico de versões: acrescentar a nova versão no topo a cada lançamento */
   var CHANGELOG = [
+    { v: '3.4.0', d: '18/11/2026', items: ['Recado do Pessoal: ao digitar @ aparece a lista dos colaboradores, como na conversa do projeto.', 'Menções agora usam só o primeiro nome (@Diogo). Se dois tiverem o mesmo primeiro nome, usa o nome completo.', 'Enquanto escreve, o @Nome fica azul e em negrito quando o nome está certo (a pessoa vai receber o aviso).'] },
     { v: '3.3.1', d: '18/11/2026', items: ['Pessoal: "Escolher data…" troca o menu do prazo por um calendário igual ao do quadro (setas mudam o mês, Hoje e Sem prazo).'] },
     { v: '3.3.0', d: '17/11/2026', items: ['Pessoal e ficha do projeto: Devolver abre uma caixinha com um campo para cada ajuste (Enter cria o próximo, ✕ apaga) e escolher para qual status o projeto volta, sem abrir a ficha.'] },
     { v: '3.2.1', d: '17/11/2026', items: ['Pessoal: projetos seus em conferência com outra pessoa também ficam apagados, com uma prancheta cinza.', 'Pessoal: os projetos para você conferir ganharam um ícone de prancheta e ficaram alinhados com os outros.'] },
