@@ -254,6 +254,8 @@
   .msg-new { display: flex; gap: 8px; align-items: flex-end; position: relative; }
   .mention { color: var(--primary); font-weight: 600; }
   .mention.me { background: var(--primary-soft); border-radius: 4px; padding: 0 3px; }
+  .char-cnt { position: fixed; z-index: 400; font-size: 11px; font-weight: 600; color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; pointer-events: none; font-variant-numeric: tabular-nums; }
+  .char-cnt.full { color: var(--danger); border-color: var(--danger); }
   .mhl-wrap { position: relative; flex: 1; min-width: 0; display: flex; }
   .mhl-wrap > textarea { flex: 1; min-width: 0; }
   .mhl-back { position: absolute; left: 0; top: 0; overflow: hidden; white-space: pre-wrap; overflow-wrap: break-word; border-style: solid; border-color: transparent; color: var(--text); background: var(--surface); pointer-events: none; }
@@ -1009,6 +1011,7 @@
   .os-box .modal-body { display: flex; flex-direction: column; gap: 14px; max-height: 70vh; overflow-y: auto; }
   .os-box .os-sub { margin: -4px 0 0; font-size: 13px; color: var(--muted); }
   .os-box textarea { min-height: 64px; resize: vertical; }
+  .os-box textarea.autogrow { resize: none; overflow: hidden; }
   .ret-items { display: flex; flex-direction: column; gap: 8px; }
   .ret-item { display: flex; align-items: center; gap: 8px; }
   .ret-item .n { width: 22px; height: 22px; flex: none; border-radius: 50%; background: var(--danger-soft); color: var(--danger); font-size: 12px; font-weight: 700; display: grid; place-items: center; }
@@ -1210,7 +1213,8 @@
   .mr-note { position: relative; }
   .mr-note .mention-pop { top: calc(100% + 4px); bottom: auto; }
   .mr-pop .mention-pop button { padding: 7px 10px; }
-  .mr-pop textarea { width: 260px; min-height: 60px; resize: vertical; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: 13px; }
+  .mr-pop textarea { width: 260px; min-height: 60px; resize: none; overflow-y: hidden; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: 13px; }
+  .mr-pop .row::before { display: none; } /* a barrinha colorida das linhas do Quadro não vale aqui */
   .mr-pop .row { display: flex; justify-content: flex-end; gap: 6px; padding-top: 4px; }
   .mine-empty { padding: 22px; text-align: center; color: var(--muted); font-size: 13px; }
   @media (max-width: 760px) {
@@ -1226,7 +1230,7 @@
 <header class="app-header">
   <div class="brand">
     <div class="logo"><img class="logo-light" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAE0AAABgBAMAAACqFeJrAAAAMFBMVEURSJYTSJYJT2kTR5MAAH8AP78URpIUR5MAAAAAAP8RSpMAf38TR5QHPn0JNpUTRZE5wAVuAAAAEHRSTlMjygebAgRl/gABEQKxBQdXbaqaZQAAAxBJREFUeNqN1k9IFFEcB/Dvm9mRZUFn+0OQEv2zW6NCEh4SvFTgiuRVIYKN8BIUhbGHYIukIRE9hGjSIUKiMDJa6BDU3hJFGgL3ZgheliSdxY1dZ9fsMDPrzOzMvN+77NuZLx9+b2febx9TYY4bchrBYzdiTfbe5BE2BOszORwag+VJHM72hjic5TXwOMsb5HGmx+dMr5fLIQKg4TOXg0CqDpNMRQPjcrtxgcRNX2OqJPC5EzsC/1EA0wmw0RiBq5SFJIkDm6BwKAs0DmKVyw3kgKpA48AeEKoDygKNAy83M7rg3Efeuy9qXFwLzhnTv+ypuI7g3Cv5uD3d14NzxrEuLagfuLikBkLOyCmBfcM53jfvgeAZSy99ahEvea+8i7bXx+rfA2NJCelrnOrq6wvg6nLzrzWk+TnjiwJKbv6TxnCX8XLGmILDlbNCnLPet83rbFwe6i788OZc+0M6H9dihSIkuVF3x9z7o39DYyMZoNJ9Ouy5SdLJfOxiM4C1glwOfm79GxqbygBApftjcH3S/KR2JF8052aFh+x7Jcd6r8ga/mR6YIJZANj2WYd0S4H4pMf6lkkCDI/PWONU5IKdu/7Iuyu+3by9YncPptYux3UAHyxwIAvx79WFWpdhM66d6lxHR3H5oBsJ2/bQAWBrLgsA6PuqVxdbnL+L6q4pVihaXPb5rKO7ed/T0mgWQF+bLl7eRIgH+z3oaJ1FiIfSXBZ9bbq4uhm+3/bv5WeONkJxcX79YEta+6dXPZxPf9nHBNDp4Xz7WhpibpPfr5CG0jlGyEHMyaDk6jnfnA/nm/Ph/HLiqkzqz8r935T+LC7NUvqpb3UHOWa3qNJPOaQ/i3u1rdq6EJJThp/ZV1qWg3PSYsneqVgJOZ8m2u9w/teZCkDaKfFOEwIAJJ5yTydMpXCmR+B0plK4KItQFotUnqkUrmlHoFSXSoCNEzjZKAsUbhBgaQqHsvi9i5d7eE5DlXtORLSpQjknIjUUfP5zclMG5TyJ1CAonsVxvVQvKJ7N8TyrOp4XHRdB8VJJe/YfOu4LfkULUz4AAAAASUVORK5CYII=" alt="SteinCorp Engenharia"><img class="logo-dark" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAE0AAABgBAMAAACqFeJrAAAAMFBMVEX///8AAAD///////////////////////////8AAAAAAAAAAAAAAAAAAAAAAAAAAAA6fKKrAAAAEHRSTlP+AAaxVy/Em2UAAAAAAAAAw2/Z4wAAAktJREFUeNqN1rGO00AQBuB/NrkQBRzvRkCDdJGoETlqdOIBuII2Ugqa6+8ReAQe4R6BF0CCjpKOKhJ0nLjo1hKHnILsFWuv7duxd7ZJvBp/zm52xkMGfujlFwwMquJIXQ+FQVWf+YvBsNpLcbWX4iovyVVekvNemvNemgMZEQcl496RkXBHD5WIO9NkJFx2UCIuBy0knHNKxoEeSzg4JeNAkHBwSsalvaPMQeJ5Dqm4868W/c89/1x/c7AA4Ni4yTMbzqfz4WMubvPJBK+6g1gO9t4Uu95NYaO5EcPtpmVvfUlwjMdyjMdyscdzscdzkdfDRd6msDBpb7Kblih1cv82hSX9qkh5k920NP9+TGNQRZxb/1/Gp6MzMzqGNbdXGOW5HTovq8KSWwMMSAyHGOx4NceBxHEBDDt+aOXH6qcjt/4ID/4CoG/Cc6nL0ba+WjpLruU9D7cU7t5vytW29X+U9dAl9g/ef/PzJ1cl7Z/+btYRPNwAaK9Dt7i2BwD7zIMnZDtceO/Xo9nnDhedUzu7APBSWyoyro/ogDEX55GdXTBc7MHcXscck+d29gYRx3gAdMSx9dnEHO8h4vh6H3Ng63OuvgvqJMexHsNxHsdxHscxHssxHsuFuGa77fFQ39nk2mKLfi9v8jhDfxz9fXs5/L72cfnqUtR3jv7I+s7Xsr4zzfm+M819ICPhxo+UiDvVZCTc/KBEXA5aSDjnlIwDPZFwcErGCfrO8VzWd57K+s7xXNZ3ei7peS7tVVzKq7ikV3MJr+ZSXuBwB2Ej228MZduRAAAAAElFTkSuQmCC" alt="SteinCorp Engenharia"></div>
-    <h1 id="appTitle" contenteditable="true" spellcheck="false" title="Clique para editar o título">Projetos de Engenharia</h1>
+    <h1 id="appTitle" data-max="40" contenteditable="true" spellcheck="false" title="Clique para editar o título">Projetos de Engenharia</h1>
   </div>
   <nav class="tabs" role="tablist">
     <span class="tab-glass" aria-hidden="true"></span>
@@ -1307,14 +1311,14 @@
           <span class="name-sep" aria-hidden="true">-</span>
           <div class="name-title">
             <label for="f-name">Título <span class="req">*</span></label>
-            <input id="f-name" maxlength="120" autocomplete="off" placeholder="Ex.: REGULARIZAÇÃO">
+            <input id="f-name" maxlength="100" autocomplete="off" placeholder="Ex.: REGULARIZAÇÃO">
           </div>
         </div>
         <small class="err" id="nameErr">Informe o número e o título do projeto.</small>
       </div>
       <div class="field full">
         <label for="f-desc">Descrição</label>
-        <textarea id="f-desc" rows="2"></textarea>
+        <textarea id="f-desc" rows="2" maxlength="1000"></textarea>
       </div>
       <div class="field">
         <span class="label">Disciplinas</span>
@@ -1650,7 +1654,10 @@
     ['priorities', 'statuses', 'types'].forEach(function (k) {
       out[k] = out[k].filter(function (x) { return x && x.id; }).map(function (x) {
         var item = { id: String(x.id), name: String(x.name || 'Sem nome'), color: toHex6(x.color) };
-        if (k === 'statuses') item.clearPriority = typeof x.clearPriority === 'boolean' ? x.clearPriority : defaultClear(item.name);
+        if (k === 'statuses') {
+          item.clearPriority = typeof x.clearPriority === 'boolean' ? x.clearPriority : defaultClear(item.name);
+          item.kind = typeof x.kind === 'string' ? (ST_KINDS.indexOf(x.kind) >= 0 ? x.kind : '') : inferKind(item.name);
+        }
         return item;
       });
     });
@@ -1729,6 +1736,20 @@
     return out;
   }
 
+  /* Função fixa de cada status: work (andamento), rev (revisão), conf (conferência), done (concluído), wait (espera / não iniciado).
+     Na primeira vez sai do nome; depois fica guardada e renomear não muda nada. */
+  var ST_KINDS = ['work', 'rev', 'conf', 'done', 'wait'];
+  function inferKind(name) {
+    var n = norm(name);
+    if (n.indexOf('confer') >= 0) return 'conf';
+    if (n.indexOf('conclu') >= 0) return 'done';
+    if (n.indexOf('revis') >= 0) return 'rev';
+    if (n.indexOf('andamento') >= 0) return 'work';
+    if (n.indexOf('nao inicia') >= 0 || n.indexOf('espera') >= 0) return 'wait';
+    return '';
+  }
+  function stKind(statusId) { var s = byId(state.statuses, statusId); return s ? (s.kind || '') : ''; }
+  var KIND_LABEL = { work: 'Andamento', rev: 'Revisão', conf: 'Conferência', done: 'Concluído', wait: 'Espera' };
   /* Status que, por padrão, zeram a prioridade ao receber um projeto */
   function defaultClear(name) {
     var n = norm(name);
@@ -1776,7 +1797,7 @@
     var n = Number(v);
     if (v !== undefined && v !== null && v !== '' && isFinite(n)) return Math.max(0, Math.min(100, Math.round(n)));
     var st = (statuses || []).filter(function (x) { return x.id === statusId; })[0];
-    return st && norm(st.name).indexOf('conclu') >= 0 ? 100 : 0;
+    return st && (typeof st.kind === 'string' ? st.kind : inferKind(st.name)) === 'done' ? 100 : 0;
   }
 
   function load() {
@@ -2276,7 +2297,7 @@
   ];
   var LISTS = [
     { key: 'priorities', title: 'Prioridades', sub: 'Arraste pelo ícone ⋮⋮ para mudar a ordem.', field: 'priorityId', noun: 'prioridade' },
-    { key: 'statuses', title: 'Status', sub: 'Arraste pelo ícone ⋮⋮ para mudar a ordem. Ela define a ordem das caixas e das colunas do Board. Com "Zera prioridade" marcado, o projeto que entra nesse status fica Sem prioridade.', field: 'statusId', noun: 'status' },
+    { key: 'statuses', title: 'Status', sub: 'Arraste pelo ícone ⋮⋮ para mudar a ordem. Ela define a ordem das caixas e das colunas do Board. Com "Zera prioridade" marcado, o projeto que entra nesse status fica Sem prioridade. Pode renomear os status à vontade: o gestor guarda a função de cada um (andamento, revisão, conferência, concluído).', field: 'statusId', noun: 'status' },
     { key: 'types', title: 'Disciplinas', sub: 'Arraste pelo ícone ⋮⋮ para mudar a ordem. Um projeto pode ter mais de uma disciplina.', field: 'typeIds', noun: 'esta disciplina' }
   ];
 
@@ -2294,14 +2315,11 @@
   /* Status "Concluído" (qualquer status cujo nome comece com Conclu) */
   /* "Em aberto" = em andamento, em revisão ou em conferência */
   function isOpenStatus(statusId) {
-    var s = byId(state.statuses, statusId);
-    if (!s) return false;
-    var n = norm(s.name);
-    return n.indexOf('andamento') >= 0 || n.indexOf('revis') >= 0 || n.indexOf('confer') >= 0;
+    var k = stKind(statusId);
+    return k === 'work' || k === 'rev' || k === 'conf';
   }
   function isDoneStatus(statusId) {
-    var s = byId(state.statuses, statusId);
-    return !!s && norm(s.name).indexOf('conclu') >= 0;
+    return stKind(statusId) === 'done';
   }
   function changeStatus(p, newStatus) {
     p.statusId = newStatus;
@@ -2373,6 +2391,19 @@
      Elementos
      ========================================================= */
   var appTitle = $('#appTitle');
+  var TITLE_MAX = 40;
+  appTitle.addEventListener('beforeinput', function (e) {
+    if (!/^insert/.test(e.inputType)) return;
+    var sel = window.getSelection(), selLen = sel && sel.rangeCount ? sel.toString().length : 0;
+    var add = e.data != null ? e.data.length : (e.dataTransfer ? e.dataTransfer.getData('text/plain').length : 1);
+    if (e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak') { e.preventDefault(); return; }
+    if (appTitle.textContent.length - selLen + add > TITLE_MAX) {
+      e.preventDefault();
+      var room = TITLE_MAX - (appTitle.textContent.length - selLen);
+      var txt = e.data != null ? e.data : (e.dataTransfer ? e.dataTransfer.getData('text/plain') : '');
+      if (room > 0 && txt) document.execCommand('insertText', false, txt.replace(/\s+/g, ' ').slice(0, room));
+    }
+  });
   var themeBtn = $('#themeBtn');
   var tbody = $('#tbody');
   var filtersEl = $('#filters');
@@ -2530,10 +2561,7 @@
     if (!item) return '<span class="muted">' + esc(emptyLabel) + '</span>';
     return '<span class="tag"><span class="dot" style="background:' + esc(item.color) + '"></span><span>' + esc(item.name) + '</span></span>';
   }
-  function isDone(p) {
-    var s = byId(state.statuses, p.statusId);
-    return !!s && norm(s.name).indexOf('conclu') >= 0;
-  }
+  function isDone(p) { return stKind(p.statusId) === 'done'; }
   function dueHTML(p) {
     if (!p.deadline) return '<span class="muted">-</span>';
     var parts = p.deadline.split('-').map(Number);
@@ -3410,7 +3438,7 @@
       return '<li class="item" data-id="' + esc(it.id) + '">' +
         '<span class="item-grip" title="Arraste para reordenar">' + ICON.grip + '</span>' +
         '<button type="button" class="swatch" data-action="color" style="background:' + esc(it.color) + '" title="Escolher cor" aria-label="Escolher cor"></button>' +
-        '<input class="input item-name" data-action="rename" value="' + esc(it.name) + '" maxlength="40" aria-label="Nome">' +
+        '<input class="input item-name" data-action="rename" value="' + esc(it.name) + '" maxlength="40" aria-label="Nome"' + (def.key === 'statuses' && it.kind ? ' title="Função no gestor: ' + KIND_LABEL[it.kind] + '. Pode renomear que a função continua."' : '') + '>' +
         (def.key === 'statuses'
           ? '<label class="clear-prio" title="Ao mover um projeto para este status, a prioridade vira Sem prioridade"><input type="checkbox" data-action="clearprio"' + (it.clearPriority ? ' checked' : '') + '>Zera prioridade</label>'
           : '') +
@@ -3934,7 +3962,11 @@
       var name = input.value.trim();
       if (!name) { input.focus(); return; }
       var novo = { id: uid(), name: name, color: key === 'types' ? vividColor(state[key]) : nextColor(state[key]) };
-      if (key === 'statuses') novo.clearPriority = false;
+      if (key === 'statuses') {
+        novo.clearPriority = false;
+        var nk = inferKind(novo.name);
+        novo.kind = nk && !state.statuses.some(function (x) { return x.kind === nk; }) ? nk : '';
+      }
       state[key].push(novo);
       save(); renderSettings(); refreshData();
       var again = settingsEl.querySelector('[data-list="' + key + '"] form input');
@@ -4533,10 +4565,9 @@
     return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
   }
   function isConfStatus(statusId) {
-    var st = byId(state.statuses, statusId);
-    return !!st && norm(st.name).indexOf('confer') >= 0;
+    return stKind(statusId) === 'conf';
   }
-  function confStatusId() { var st = state.statuses.filter(function (x) { return norm(x.name).indexOf('confer') >= 0; })[0]; return st ? st.id : ''; }
+  function confStatusId() { var st = state.statuses.filter(function (x) { return x.kind === 'conf'; })[0]; return st ? st.id : ''; }
   function doneStatusId() { var st = state.statuses.filter(function (x) { return isDoneStatus(x.id); })[0]; return st ? st.id : ''; }
   function pendingAdj(p) { return (p.adjustments || []).filter(function (a) { return !a.done; }).length; }
   function addComment(p, text, kind, notify) {
@@ -4768,7 +4799,7 @@
         (talkUi.ret ? '' : '<button type="button" class="btn btn-danger sm" data-talk="ret-open">Devolver com ajustes</button>') + '</div>'; /* some quando o formulário de ajustes abre */
       if (talkUi.ret) {
         var opts = state.statuses.filter(function (x) { return !isConfStatus(x.id) && !isDoneStatus(x.id); });
-        var def = opts.filter(function (x) { return norm(x.name).indexOf('andamento') >= 0; })[0] || opts[0];
+        var def = opts.filter(function (x) { return x.kind === 'work'; })[0] || opts[0];
         html += '<div class="ret-form"><span class="adj-title">O que precisa ser ajustado? (um item por linha)</span>' +
           '<textarea id="ret-text" placeholder="Ex.: Pilar P3 sem armadura de espera"></textarea>' +
           '<div class="row2"><span class="adj-title">Voltar para</span><select id="ret-status">' + opts.map(function (x) {
@@ -4797,7 +4828,7 @@
         if (m.kind === 'log') return '<div class="log-line">' + del + '<b>' + esc(whoName(m.by)) + '</b> ' + esc(m.text.charAt(0).toLowerCase() + m.text.slice(1)) + ' <span>' + fmtWhen(m.at) + '</span></div>';
         return '<div class="msg' + (m.kind === 'sys' ? ' sys' : (m.by && m.by === me ? ' mine' : '')) + '">' + del + '<div class="msg-h"><b>' + esc(whoName(m.by)) + '</b>' + fmtWhen(m.at) + '</div><div class="msg-t">' + msgTextHTML(m.text) + '</div></div>';
       }).join('') : '<div class="talk-empty">Nenhuma mensagem ainda.</div>') + '</div>' +
-      '<div class="msg-new"><textarea id="talk-text" rows="1" placeholder="Mensagem (@ para mencionar)"></textarea><div class="mention-pop" id="mentionPop" hidden></div><button type="button" class="btn btn-primary sm" data-talk="send">Enviar</button></div>';
+      '<div class="msg-new"><textarea id="talk-text" rows="1" maxlength="1000" placeholder="Mensagem (@ para mencionar)"></textarea><div class="mention-pop" id="mentionPop" hidden></div><button type="button" class="btn btn-primary sm" data-talk="send">Enviar</button></div>';
     box.innerHTML = html;
     var ml = $('#talkMsgs'); if (ml) ml.scrollTop = ml.scrollHeight;
     var tt = $('#talk-text'); if (tt) { tt.classList.add('autogrow'); tt.addEventListener('input', function () { autoGrow(tt); }); attachMentionHL(tt); }
@@ -4813,7 +4844,7 @@
   }
   function retStatusOpts() {
     var opts = state.statuses.filter(function (x) { return !isConfStatus(x.id) && !isDoneStatus(x.id); });
-    var def = opts.filter(function (x) { return norm(x.name).indexOf('andamento') >= 0; })[0] || opts[0];
+    var def = opts.filter(function (x) { return x.kind === 'work'; })[0] || opts[0];
     return opts.map(function (x) { return '<option value="' + esc(x.id) + '"' + (def && def.id === x.id ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('');
   }
   function talkChanged(p, msg) {
@@ -4887,7 +4918,16 @@
     adj.doneBy = cb.checked ? (currentUser() || '') : '';
     adj.doneAt = cb.checked ? nowISO() : '';
     var msg = '';
-    if (cb.checked && !pendingAdj(p) && !isConfStatus(p.statusId) && confStatusId()) {
+    if (cb.checked && !pendingAdj(p) && !isConfStatus(p.statusId) && confStatusId() && !p.checker) {
+      /* sem conferente: quem pediu os ajustes confere (se não for responsável) */
+      var asker = (p.adjustments || []).slice().reverse().filter(function (a) { return a.by; })[0];
+      if (asker && p.responsibles.indexOf(asker.by) < 0 && byId(state.collaborators, asker.by)) {
+        p.checker = asker.by;
+        if (editingId === p.id && $('#f-checker')) $('#f-checker').value = p.checker; /* a ficha aberta também mostra o conferente */
+      }
+      else msg = 'Todos os ajustes feitos. Escolha quem vai conferir para mandar para a conferência.';
+    }
+    if (cb.checked && !pendingAdj(p) && !isConfStatus(p.statusId) && confStatusId() && p.checker) {
       skipStatusLog[p.id] = true;
       changeStatus(p, confStatusId());
       addComment(p, 'Concluiu todos os ajustes. Voltou para ' + byId(state.statuses, confStatusId()).name + '.', 'sys');
@@ -4896,6 +4936,32 @@
     }
     talkChanged(p, msg);
   });
+  /* Contador de caracteres: só aparece perto do limite (80% ou mais) */
+  var charCnt = document.createElement('div');
+  charCnt.className = 'char-cnt'; charCnt.hidden = true;
+  document.body.appendChild(charCnt);
+  function cntMax(el) {
+    if (!el || !el.matches) return 0;
+    if (el.matches('textarea[maxlength], input[maxlength]')) { var m = Number(el.getAttribute('maxlength')); return m >= 40 ? m : 0; }
+    if (el.matches('[contenteditable][data-max]')) return Number(el.dataset.max) || 0;
+    return 0;
+  }
+  function cntUpdate(el) {
+    var max = cntMax(el);
+    if (!max || document.activeElement !== el) { charCnt.hidden = true; return; }
+    var len = el.isContentEditable ? el.textContent.length : el.value.length;
+    if (len < max * 0.8) { charCnt.hidden = true; return; }
+    charCnt.textContent = len + '/' + max;
+    charCnt.classList.toggle('full', len >= max);
+    var r = el.getBoundingClientRect();
+    charCnt.hidden = false;
+    charCnt.style.top = Math.max(4, r.top - charCnt.offsetHeight - 4) + 'px';
+    charCnt.style.left = Math.max(4, r.right - charCnt.offsetWidth) + 'px';
+  }
+  document.addEventListener('input', function (e) { cntUpdate(e.target); }, true);
+  document.addEventListener('focusin', function (e) { cntUpdate(e.target); }, true);
+  document.addEventListener('focusout', function () { setTimeout(function () { cntUpdate(document.activeElement); }, 0); }, true);
+  window.addEventListener('scroll', function () { if (!charCnt.hidden) cntUpdate(document.activeElement); }, true); /* rolou: acompanha o campo */
   /* Realce de @Nome dentro da caixa de texto (azul e negrito quando o nome está certo) */
   function mentionTokens() {
     var toks = [];
@@ -4932,6 +4998,9 @@
       ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
         'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'borderRadius', 'boxSizing', 'textIndent'].forEach(function (k) { back.style[k] = cs[k]; });
       back.style.width = ta.offsetWidth + 'px'; back.style.height = ta.offsetHeight + 'px';
+      /* com barra de rolagem o texto fica mais estreito: a camada de trás acompanha */
+      var sbw = ta.offsetWidth - ta.clientWidth - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth);
+      back.style.paddingRight = (parseFloat(cs.paddingRight) + Math.max(0, sbw)) + 'px';
       back.innerHTML = mentionHLHTML(ta.value);
       back.scrollTop = ta.scrollTop;
     }
@@ -5075,6 +5144,15 @@
       nameErr.textContent = 'Informe o título do projeto.';
       nameField.classList.add('invalid'); fName.focus(); return;
     }
+    var cur = editingId ? byId(state.projects, editingId) : null;
+    var dup = state.projects.filter(function (x) { return x.id !== editingId && splitName(x.name).num === num; })[0];
+    if (dup && (!cur || splitName(cur.name).num !== num) && !form._dupOk) {
+      confirmBox('Número repetido', 'Já existe o projeto ' + fmtName(dup.name) + '. Quer salvar mesmo assim com o mesmo número?', 'Salvar mesmo assim').then(function (ok) {
+        if (ok) { form._dupOk = true; form.requestSubmit(); } else { fNum.focus(); fNum.select(); }
+      });
+      return;
+    }
+    form._dupOk = false;
     var name = num + ' - ' + title;
     var data = {
       name: name,
@@ -5379,8 +5457,7 @@
       if (p.priorityId !== top.id) return false;
       var st = byId(state.statuses, p.statusId);
       if (!st) return true;
-      var n = norm(st.name);
-      return n.indexOf('nao inicia') >= 0 || n.indexOf('espera') >= 0;
+      return st.kind === 'wait';
     }) : [];
     html += '<div class="st-card"><h3>Por prioridade</h3><p class="sub">Distribuição das prioridades' + (scope === 'open' ? ' nos projetos abertos' : '') + '.</p><div class="bars">' +
       breakdown(list, state.priorities, 'priorityId', 'priority', showDone) + '</div>' +
@@ -5641,7 +5718,7 @@
         return '<button type="button" data-mq-checker="' + esc(c.id) + '">' + esc(c.name) + '</button>'; }).join('') + '</div>';
     }
     if (mineUi.pop === 'note') {
-      return '<div class="mr-pop"><div class="mr-note"><textarea data-mq-text placeholder="Recado (@ para mencionar)"></textarea><div class="mention-pop" data-mq-mention hidden></div></div>' +
+      return '<div class="mr-pop"><div class="mr-note"><textarea data-mq-text maxlength="500" placeholder="Recado (@ para mencionar)"></textarea><div class="mention-pop" data-mq-mention hidden></div></div>' +
         '<div class="row"><button type="button" class="btn sm" data-mq="close">Cancelar</button><button type="button" class="btn btn-primary sm" data-mq="note-send">Enviar</button></div></div>';
     }
     return '';
@@ -5680,7 +5757,7 @@
     var me = mineWho();
     var open = state.projects.filter(function (p) { return !isDoneStatus(p.statusId); });
     /* só Em andamento e Em revisão (Em espera e Não iniciado ficam de fora); em conferência vai na seção de baixo */
-    var isWorking = function (p) { var n = norm(nameIn(state.statuses, p.statusId, '')); return n.indexOf('andamento') >= 0 || n.indexOf('revis') >= 0; };
+    var isWorking = function (p) { var k = stKind(p.statusId); return k === 'work' || k === 'rev'; };
     var mine = open.filter(function (p) { return !isConfStatus(p.statusId) && isWorking(p) && p.responsibles.indexOf(me) >= 0; });
     var toCheck = open.filter(function (p) { return isConfStatus(p.statusId) && p.checker === me; });
     var waiting = open.filter(function (p) { return isConfStatus(p.statusId) && p.checker !== me && p.responsibles.indexOf(me) >= 0; });
@@ -5739,7 +5816,7 @@
   function retAddItem(v, after) {
     var d = document.createElement('div');
     d.className = 'ret-item';
-    d.innerHTML = '<span class="n"></span><input class="input" type="text" placeholder="Ex.: Pilar P3 sem armadura de espera"><button type="button" class="x" title="Apagar este ajuste">✕</button>';
+    d.innerHTML = '<span class="n"></span><input class="input" type="text" maxlength="150" placeholder="Ex.: Pilar P3 sem armadura de espera"><button type="button" class="x" title="Apagar este ajuste">✕</button>';
     d.querySelector('input').value = v;
     var box = $('#retItems');
     if (after && after.nextSibling) box.insertBefore(d, after.nextSibling); else box.appendChild(d);
@@ -5789,7 +5866,10 @@
     /* lista de @ no recado */
     mineEl.addEventListener('input', function (e) {
       if (!e.target.matches('[data-mq-text]')) return;
-      mention.idx = 0; renderMention(e.target, e.target.parentNode.querySelector('[data-mq-mention]'));
+      var ta = e.target, bd = ta.offsetHeight - ta.clientHeight;
+      ta.style.height = 'auto';
+      ta.style.height = (ta.scrollHeight + bd) + 'px'; /* cresce sem barra de rolagem */
+      mention.idx = 0; renderMention(e.target, e.target.closest('.mr-note').querySelector('[data-mq-mention]'));
     });
     mineEl.addEventListener('mousedown', function (e) {
       var b = e.target.closest('[data-mq-mention] [data-mention]');
@@ -5905,7 +5985,7 @@
      ========================================================= */
   var osDlg = $('#osDlg'), osForm = $('#osForm'), osBody = $('#osBody');
   var osSnap = null, osProjId = '';
-  function isRevStatus(id) { var st = byId(state.statuses, id); return !!st && norm(st.name).indexOf('revis') >= 0; }
+  function isRevStatus(id) { return stKind(id) === 'rev'; }
   function osWatch(check) {
     var now = {};
     state.projects.forEach(function (p) { now[p.id] = p.statusId; });
@@ -5950,10 +6030,15 @@
         '<span class="muted">Nenhuma disciplina cadastrada.</span>') + '</div></div>' +
       '<div class="field"><label for="os-checker">Conferente</label><select id="os-checker"><option value="">Escolha…</option>' + state.collaborators.map(function (c) {
         return '<option value="' + esc(c.id) + '"' + (c.id === chkSel ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('') + '</select></div>' +
-      '<div class="field"><label for="os-reason">Motivo da revisão</label><textarea id="os-reason" placeholder="O que o cliente ou a obra pediu para mudar">' + esc(cur ? cur.reason : adj) + '</textarea></div>' +
-      '<div class="field"><label for="os-service">Serviço a executar</label><textarea id="os-service" placeholder="O que precisa ser revisado (pranchas, peças, detalhes)">' + esc(cur ? cur.service : '') + '</textarea></div>' +
-      '<div class="field"><label for="os-obs">Observações</label><textarea id="os-obs" placeholder="Normas, arquivos de referência, versão das pranchas (ex.: R01)">' + esc(cur ? cur.obs : '') + '</textarea></div>';
+      '<div class="field"><label for="os-reason">Motivo da revisão</label><textarea id="os-reason" maxlength="500" placeholder="O que o cliente ou a obra pediu para mudar">' + esc(cur ? cur.reason : adj) + '</textarea></div>' +
+      '<div class="field"><label for="os-service">Serviço a executar</label><textarea id="os-service" maxlength="500" placeholder="O que precisa ser revisado (pranchas, peças, detalhes)">' + esc(cur ? cur.service : '') + '</textarea></div>' +
+      '<div class="field"><label for="os-obs">Observações</label><textarea id="os-obs" maxlength="500" placeholder="Normas, arquivos de referência, versão das pranchas (ex.: R01)">' + esc(cur ? cur.obs : '') + '</textarea></div>';
     osDlg.hidden = false;
+    ['#os-reason', '#os-service', '#os-obs'].forEach(function (sel) {
+      var ta = $(sel); if (!ta) return;
+      ta.classList.add('autogrow'); autoGrow(ta);
+      ta.addEventListener('input', function () { autoGrow(ta); });
+    });
   }
   function closeOS() { osDlg.hidden = true; osProjId = ''; osEditN = 0; }
   $('#osCancel').addEventListener('click', closeOS);
@@ -6105,9 +6190,12 @@
   }
 
   /* ---------- Versão ---------- */
-  var APP_VERSION = '3.4.0';
+  var APP_VERSION = '3.5.0';
   /* Histórico de versões: acrescentar a nova versão no topo a cada lançamento */
   var CHANGELOG = [
+    { v: '3.5.0', d: '18/11/2026', items: ['Limite de caracteres: descrição 1000, mensagem da conversa 1000, recado do Pessoal 500, cada ajuste 150, campos da OS 500, título do gestor 40 e título do projeto 100.', 'Perto do limite aparece um contador pequeno em cima do campo (ex.: 140/150), que fica vermelho quando chega no limite.', 'Recado do Pessoal e campos da OS: as caixinhas crescem conforme você escreve, sem barra de rolagem.', 'Recado do Pessoal: sumiu uma barrinha cinza que aparecia embaixo da caixinha.'] },
+    { v: '3.4.2', d: '18/11/2026', items: ['Status guardam a sua função (andamento, revisão, conferência, concluído, espera): renomear um status não quebra mais o Pessoal, as Estatísticas e a conferência.', 'Todos os ajustes feitos num projeto sem conferente: quem pediu os ajustes vira o conferente; se não der, o projeto não muda e o gestor pede para escolher quem confere.', 'Projeto com número que já existe: o gestor avisa antes de salvar.'] },
+    { v: '3.4.1', d: '18/11/2026', items: ['Recado do Pessoal: a lista de @ voltou a aparecer.'] },
     { v: '3.4.0', d: '18/11/2026', items: ['Recado do Pessoal: ao digitar @ aparece a lista dos colaboradores, como na conversa do projeto.', 'Menções agora usam só o primeiro nome (@Diogo). Se dois tiverem o mesmo primeiro nome, usa o nome completo.', 'Enquanto escreve, o @Nome fica azul e em negrito quando o nome está certo (a pessoa vai receber o aviso).'] },
     { v: '3.3.1', d: '18/11/2026', items: ['Pessoal: "Escolher data…" troca o menu do prazo por um calendário igual ao do quadro (setas mudam o mês, Hoje e Sem prazo).'] },
     { v: '3.3.0', d: '17/11/2026', items: ['Pessoal e ficha do projeto: Devolver abre uma caixinha com um campo para cada ajuste (Enter cria o próximo, ✕ apaga) e escolher para qual status o projeto volta, sem abrir a ficha.'] },
