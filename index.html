@@ -231,6 +231,11 @@
   .ret-form .row2 { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .ret-form .row2 select { flex: 1; min-width: 160px; }
   .adj-list { display: flex; flex-direction: column; gap: 4px; }
+  /* caixa dos ajustes, separada das mensagens: borda vermelha à esquerda enquanto falta algo, verde quando tudo foi feito */
+  .adj-box { border: 1px solid var(--border); border-left: 3px solid var(--danger); background: var(--surface-2); border-radius: 10px; padding: 10px 8px 8px 10px; }
+  .adj-box.ok { border-left-color: #22a06b; }
+  .adj-box .adj-title { color: var(--danger); margin: 0 0 4px 2px; }
+  .adj-box.ok .adj-title { color: #22a06b; }
   .adj-title, .talk-title { font-size: 12.5px; font-weight: 600; color: var(--muted); }
   .adj { display: flex; align-items: flex-start; gap: 8px; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
   .adj:hover { background: var(--hover); }
@@ -4814,7 +4819,7 @@
     var adjs = p.adjustments || [];
     if (adjs.length) {
       var pend = adjs.filter(function (a) { return !a.done; }).length;
-      html += '<div><div class="adj-title">Ajustes (' + (adjs.length - pend) + ' de ' + adjs.length + ' feitos)</div><div class="adj-list">' +
+      html += '<div class="adj-box' + (pend ? '' : ' ok') + '"><div class="adj-title">' + (pend ? '⚠ ' : '✓ ') + 'Ajustes (' + (adjs.length - pend) + ' de ' + adjs.length + ' feitos)</div><div class="adj-list">' +
         adjs.map(function (a) {
           return '<label class="adj' + (a.done ? ' done' : '') + '"><input type="checkbox" data-adj="' + esc(a.id) + '"' + (a.done ? ' checked' : '') + '>' +
             '<span><span class="adj-t">' + esc(a.text) + '</span><small>Pedido por ' + esc(whoName(a.by)) + ' em ' + fmtWhen(a.at) +
@@ -6197,9 +6202,10 @@
   }
 
   /* ---------- Versão ---------- */
-  var APP_VERSION = '3.6.0';
+  var APP_VERSION = '3.6.1';
   /* Histórico de versões: acrescentar a nova versão no topo a cada lançamento */
   var CHANGELOG = [
+    { v: '3.6.1', d: '18/11/2026', items: ['Ficha do projeto: os ajustes ficam dentro de uma caixa separada das mensagens (borda vermelha enquanto falta algo, verde quando todos foram feitos).'] },
     { v: '3.6.0', d: '18/11/2026', items: ['Pessoal: projeto que voltou com ajustes mostra a etiqueta vermelha "⚠ N ajustes" ao lado do nome. Ela some quando todos forem marcados.'] },
     { v: '3.5.0', d: '18/11/2026', items: ['Limite de caracteres: descrição 1000, mensagem da conversa 1000, recado do Pessoal 500, cada ajuste 150, campos da OS 500, título do gestor 40 e título do projeto 100.', 'Perto do limite aparece um contador pequeno em cima do campo (ex.: 140/150), que fica vermelho quando chega no limite.', 'Recado do Pessoal e campos da OS: as caixinhas crescem conforme você escreve, sem barra de rolagem.', 'Recado do Pessoal: sumiu uma barrinha cinza que aparecia embaixo da caixinha.'] },
     { v: '3.4.2', d: '18/11/2026', items: ['Status guardam a sua função (andamento, revisão, conferência, concluído, espera): renomear um status não quebra mais o Pessoal, as Estatísticas e a conferência.', 'Todos os ajustes feitos num projeto sem conferente: quem pediu os ajustes vira o conferente; se não der, o projeto não muda e o gestor pede para escolher quem confere.', 'Projeto com número que já existe: o gestor avisa antes de salvar.'] },
