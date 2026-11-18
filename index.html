@@ -4835,7 +4835,7 @@
         if (m.kind === 'log') return '<div class="log-line">' + del + '<b>' + esc(whoName(m.by)) + '</b> ' + esc(m.text.charAt(0).toLowerCase() + m.text.slice(1)) + ' <span>' + fmtWhen(m.at) + '</span></div>';
         return '<div class="msg' + (m.kind === 'sys' ? ' sys' : (m.by && m.by === me ? ' mine' : '')) + '">' + del + '<div class="msg-h"><b>' + esc(whoName(m.by)) + '</b>' + fmtWhen(m.at) + '</div><div class="msg-t">' + msgTextHTML(m.text) + '</div></div>';
       }).join('') : '<div class="talk-empty">Nenhuma mensagem ainda.</div>') + '</div>' +
-      '<div class="msg-new"><textarea id="talk-text" rows="1" maxlength="1000" placeholder="Mensagem (@ para mencionar)"></textarea><div class="mention-pop" id="mentionPop" hidden></div><button type="button" class="btn btn-primary sm" data-talk="send">Enviar</button></div>';
+      '<div class="msg-new"><textarea id="talk-text" rows="1" maxlength="1000" placeholder="Mensagem (@ para mencionar)" title="Enter envia · Shift+Enter desce de linha"></textarea><div class="mention-pop" id="mentionPop" hidden></div><button type="button" class="btn btn-primary sm" data-talk="send">Enviar</button></div>';
     box.innerHTML = html;
     var ml = $('#talkMsgs'); if (ml) ml.scrollTop = ml.scrollHeight;
     var tt = $('#talk-text'); if (tt) { tt.classList.add('autogrow'); tt.addEventListener('input', function () { autoGrow(tt); }); attachMentionHL(tt); }
@@ -5077,7 +5077,7 @@
     }
   });
   $('#talkBox').addEventListener('keydown', function (e) {
-    if (e.target.id === 'talk-text' && e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    if (e.target.id === 'talk-text' && e.key === 'Enter' && !e.shiftKey && !e.isComposing && !e.defaultPrevented) {
       e.preventDefault(); var sb = $('[data-talk="send"]'); if (sb) sb.click();
     }
   });
@@ -5725,7 +5725,7 @@
         return '<button type="button" data-mq-checker="' + esc(c.id) + '">' + esc(c.name) + '</button>'; }).join('') + '</div>';
     }
     if (mineUi.pop === 'note') {
-      return '<div class="mr-pop"><div class="mr-note"><textarea data-mq-text maxlength="500" placeholder="Recado (@ para mencionar)"></textarea><div class="mention-pop" data-mq-mention hidden></div></div>' +
+      return '<div class="mr-pop"><div class="mr-note"><textarea data-mq-text maxlength="500" placeholder="Recado (@ para mencionar)" title="Enter envia · Shift+Enter desce de linha"></textarea><div class="mention-pop" data-mq-mention hidden></div></div>' +
         '<div class="row"><button type="button" class="btn sm" data-mq="close">Cancelar</button><button type="button" class="btn btn-primary sm" data-mq="note-send">Enviar</button></div></div>';
     }
     return '';
@@ -5899,6 +5899,11 @@
       }
       if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); pickMention(mention.items[mention.idx].id); return; }
       if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); mention.open = false; mention.pop.hidden = true; }
+    });
+    mineEl.addEventListener('keydown', function (e) {
+      if (!e.target.matches('[data-mq-text]') || e.key !== 'Enter' || e.shiftKey || e.isComposing || e.defaultPrevented) return;
+      e.preventDefault();
+      var sb = e.target.closest('.mr-pop').querySelector('[data-mq="note-send"]'); if (sb) sb.click();
     });
     mineEl.addEventListener('change', function (e) {
       if (e.target.id === 'mineWho') { mineUi.who = e.target.value; mineUi.pop = ''; mineUi.popId = ''; renderMine(); return; }
@@ -6202,9 +6207,10 @@
   }
 
   /* ---------- Versão ---------- */
-  var APP_VERSION = '3.6.1';
+  var APP_VERSION = '3.6.2';
   /* Histórico de versões: acrescentar a nova versão no topo a cada lançamento */
   var CHANGELOG = [
+    { v: '3.6.2', d: '18/11/2026', items: ['Conversa da ficha e recado do Pessoal: Enter envia a mensagem e Shift+Enter desce de linha. Com a lista de @ aberta, Enter continua escolhendo o nome.'] },
     { v: '3.6.1', d: '18/11/2026', items: ['Ficha do projeto: os ajustes ficam dentro de uma caixa separada das mensagens (borda vermelha enquanto falta algo, verde quando todos foram feitos).'] },
     { v: '3.6.0', d: '18/11/2026', items: ['Pessoal: projeto que voltou com ajustes mostra a etiqueta vermelha "⚠ N ajustes" ao lado do nome. Ela some quando todos forem marcados.'] },
     { v: '3.5.0', d: '18/11/2026', items: ['Limite de caracteres: descrição 1000, mensagem da conversa 1000, recado do Pessoal 500, cada ajuste 150, campos da OS 500, título do gestor 40 e título do projeto 100.', 'Perto do limite aparece um contador pequeno em cima do campo (ex.: 140/150), que fica vermelho quando chega no limite.', 'Recado do Pessoal e campos da OS: as caixinhas crescem conforme você escreve, sem barra de rolagem.', 'Recado do Pessoal: sumiu uma barrinha cinza que aparecia embaixo da caixinha.'] },
